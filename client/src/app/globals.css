@@ -1,0 +1,97 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0a0a0a;
+  --fg: #ededed;
+  --accent: #00ff41;
+  --accent-dim: #00cc33;
+  --danger: #ff3333;
+  --warning: #ffcc00;
+  --border: #333;
+  --border-heavy: #555;
+  --surface: #111;
+  --surface-raised: #1a1a1a;
+  --mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
+  --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--sans);
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* --- Brutalist Utilities --- */
+.border-brutal {
+  border: 3px solid var(--fg);
+}
+
+.border-brutal-accent {
+  border: 3px solid var(--accent);
+}
+
+.mono {
+  font-family: var(--mono);
+}
+
+.text-accent {
+  color: var(--accent);
+}
+
+.bg-surface {
+  background: var(--surface);
+}
+
+.bg-surface-raised {
+  background: var(--surface-raised);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border: 1px solid var(--bg);
+}
+
+/* Status indicators */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  display: inline-block;
+}
+
+.status-dot.active {
+  background: var(--accent);
+}
+
+.status-dot.warning {
+  background: var(--warning);
+}
+
+.status-dot.error {
+  background: var(--danger);
+}
+
+/* Pulse animation for active nodes */
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 4px var(--accent); }
+  50% { box-shadow: 0 0 16px var(--accent); }
+}
+
+.pulse-active {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

@@ -1,0 +1,7 @@
+{
+  "listen_addr": "0.0.0.0:9012",
+  "private_key_path": "./keys/researcher.pem",
+  "bootstrap_peers": [],
+  "mcp_router_port": 9013,
+  "log_level": "info"
+}

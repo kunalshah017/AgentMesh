@@ -1,0 +1,8 @@
+{
+  "listen_addr": "0.0.0.0:9002",
+  "private_key_path": "./keys/orchestrator.pem",
+  "bootstrap_peers": [],
+  "mcp_router_port": 9003,
+  "a2a_port": 9004,
+  "log_level": "info"
+}

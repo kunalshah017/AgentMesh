@@ -1,0 +1,7 @@
+{
+  "listen_addr": "0.0.0.0:9022",
+  "private_key_path": "./keys/risk-analyst.pem",
+  "bootstrap_peers": [],
+  "mcp_router_port": 9023,
+  "log_level": "info"
+}
