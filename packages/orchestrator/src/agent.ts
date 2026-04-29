@@ -415,6 +415,9 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
    */
   private resolveToolName(subtask: SubTask): string {
     const desc = subtask.description.toLowerCase();
+    const cap = subtask.assignedTool.toLowerCase();
+
+    // Keyword matching from description
     if (
       desc.includes("yield") ||
       desc.includes("scan") ||
@@ -422,15 +425,26 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
     )
       return "scan-yields";
     if (desc.includes("token") || desc.includes("price")) return "token-info";
-    if (desc.includes("protocol") || desc.includes("stats"))
+    if (
+      desc.includes("protocol") ||
+      desc.includes("stats") ||
+      desc.includes("compare") ||
+      desc.includes("research")
+    )
       return "protocol-stats";
     if (desc.includes("risk") || desc.includes("assess")) return "risk-assess";
-    if (desc.includes("audit") || desc.includes("contract"))
+    if (desc.includes("audit") || desc.includes("vulnerab"))
       return "contract-audit";
     if (desc.includes("swap") || desc.includes("trade")) return "execute-swap";
     if (desc.includes("deposit") || desc.includes("stake"))
       return "execute-deposit";
     if (desc.includes("balance") || desc.includes("portfolio"))
+      return "check-balance";
+
+    // Fallback: map capability category to a default tool
+    if (cap.includes("research")) return "protocol-stats";
+    if (cap.includes("risk")) return "risk-assess";
+    if (cap.includes("execution") || cap.includes("exec"))
       return "check-balance";
     return subtask.assignedTool;
   }
