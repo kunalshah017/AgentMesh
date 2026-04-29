@@ -1,4 +1,11 @@
-export function Header() {
+import type { ConnectionStatus } from "@/hooks/useOrchestrator";
+
+interface HeaderProps {
+  status: ConnectionStatus;
+  eventCount: number;
+}
+
+export function Header({ status, eventCount }: HeaderProps) {
   return (
     <header className="h-16 flex items-center justify-between px-6 border-b-3 border-[var(--fg)] bg-[var(--bg)]">
       <div className="flex items-center gap-4">
@@ -12,8 +19,11 @@ export function Header() {
 
       <div className="flex items-center gap-6 mono text-xs">
         <div className="flex items-center gap-2">
-          <span className="status-dot active" />
-          <span>4 NODES</span>
+          <span className={`status-dot ${status === "connected" ? "active" : status === "connecting" ? "warning" : "error"}`} />
+          <span>{status === "connected" ? "LIVE" : status === "connecting" ? "CONNECTING" : "OFFLINE"}</span>
+        </div>
+        <div className="text-[var(--border-heavy)]">
+          {eventCount > 0 && <span>{eventCount} events</span>}
         </div>
         <div className="flex items-center gap-2">
           <span className="text-[var(--accent-dim)]">0G</span>

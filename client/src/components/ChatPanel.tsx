@@ -1,83 +1,205 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
+import type { AgentEvent, ConnectionStatus } from "@/hooks/useOrchestrator";
 
 interface ChatPanelProps {
-  onEvent: (type: string, data: unknown) => void;
+  events: AgentEvent[];
+  onSendGoal: (goal: string) => void;
+  status: ConnectionStatus;
 }
 
 interface Message {
-  role: "user" | "assistant" | "system";
+  role: "user" | "mesh" | "system";
   content: string;
   timestamp: number;
+  eventType?: string;
 }
 
-export function ChatPanel({ onEvent }: ChatPanelProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: "system",
-      content: "AgentMesh ready. Enter a goal to begin orchestration.",
-      timestamp: Date.now(),
-    },
-  ]);
+function formatResult(data: unknown): string {
+  if (typeof data === "string") return data;
+  if (Array.isArray(data)) {
+    return data
+      .slice(0, 5)
+      .map((item, i) => {
+        if (typeof item === "object" && item !== null) {
+          const o = item as Record<string, unknown>;
+          const parts: string[] = [];
+          for (const [k, v] of Object.entries(o)) {
+            parts.push(`${k}: ${v}`);
+          }
+          return `  ${i + 1}. ${parts.join(" | ")}`;
+        }
+        return `  ${i + 1}. ${item}`;
+      })
+      .join("\n");
+  }
+  if (typeof data === "object" && data !== null) {
+    const o = data as Record<string, unknown>;
+    return Object.entries(o)
+      .map(([k, v]) => `  ${k}: ${typeof v === "object" ? JSON.stringify(v) : v}`)
+      .join("\n");
+  }
+  return JSON.stringify(data, null, 2);
+}
+
+export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [userGoals, setUserGoals] = useState<{ goal: string; ts: number }[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
+
+  // Build chat messages from events + user goals
+  const messages = useMemo(() => {
+    const msgs: Message[] = [
+      { role: "system", content: "AgentMesh ready. Enter a goal to begin orchestration.", timestamp: 0 },
+    ];
+
+    let goalIdx = 0;
+
+    for (const event of events) {
+      const ts = (event._ts as number) ?? Date.now();
+
+      // Insert user goal messages in chronological order
+      while (goalIdx < userGoals.length && userGoals[goalIdx].ts <= ts) {
+        msgs.push({ role: "user", content: userGoals[goalIdx].goal, timestamp: userGoals[goalIdx].ts });
+        goalIdx++;
+      }
+
+      switch (event.type) {
+        case "system":
+          msgs.push({ role: "system", content: String(event.message ?? ""), timestamp: ts });
+          break;
+        case "task_created":
+          msgs.push({
+            role: "mesh",
+            content: `▸ Task created: ${(event.task as { goal?: string })?.goal ?? ""}`,
+            timestamp: ts,
+            eventType: "task",
+          });
+          break;
+        case "tool_called":
+          msgs.push({
+            role: "mesh",
+            content: `⚡ Calling ${event.tool} → ${event.method}`,
+            timestamp: ts,
+            eventType: "tool",
+          });
+          break;
+        case "payment_sent":
+          msgs.push({
+            role: "mesh",
+            content: `💰 Payment: ${(event.payment as { amount?: string })?.amount ?? "?"} USDC`,
+            timestamp: ts,
+            eventType: "payment",
+          });
+          break;
+        case "task_completed": {
+          const task = (event.result ?? event.task) as { subtasks?: Array<{ description?: string; status?: string; result?: unknown }> } | undefined;
+          if (task?.subtasks) {
+            for (const sub of task.subtasks) {
+              const statusIcon = sub.status === "completed" ? "✓" : sub.status === "failed" ? "✗" : "…";
+              msgs.push({
+                role: "mesh",
+                content: `${statusIcon} ${sub.description}\n${sub.result ? formatResult(sub.result) : ""}`,
+                timestamp: ts,
+                eventType: sub.status === "completed" ? "success" : "error",
+              });
+            }
+          }
+          msgs.push({
+            role: "mesh",
+            content: "━━━ Task complete ━━━",
+            timestamp: ts,
+            eventType: "done",
+          });
+          break;
+        }
+        case "task_result": {
+          const task = event.task as { subtasks?: Array<{ description?: string; status?: string; result?: unknown }> } | undefined;
+          if (task?.subtasks) {
+            for (const sub of task.subtasks) {
+              const statusIcon = sub.status === "completed" ? "✓" : sub.status === "failed" ? "✗" : "…";
+              msgs.push({
+                role: "mesh",
+                content: `${statusIcon} ${sub.description}\n${sub.result ? formatResult(sub.result) : ""}`,
+                timestamp: ts,
+                eventType: sub.status === "completed" ? "success" : "error",
+              });
+            }
+          }
+          msgs.push({
+            role: "mesh",
+            content: "━━━ Task complete ━━━",
+            timestamp: ts,
+            eventType: "done",
+          });
+          break;
+        }
+        case "error":
+          msgs.push({
+            role: "mesh",
+            content: `⚠ ${event.message}`,
+            timestamp: ts,
+            eventType: "error",
+          });
+          break;
+      }
+    }
+
+    // Append remaining user goals
+    while (goalIdx < userGoals.length) {
+      msgs.push({ role: "user", content: userGoals[goalIdx].goal, timestamp: userGoals[goalIdx].ts });
+      goalIdx++;
+    }
+
+    return msgs;
+  }, [events, userGoals]);
+
+  // Track loading state from events
+  useEffect(() => {
+    const lastEvent = events[events.length - 1];
+    if (lastEvent?.type === "task_completed" || lastEvent?.type === "task_result" || lastEvent?.type === "error") {
+      setLoading(false);
+    }
+  }, [events]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const sendGoal = async () => {
+  const sendGoal = () => {
     if (!input.trim() || loading) return;
-
     const goal = input.trim();
     setInput("");
-    setMessages((prev) => [...prev, { role: "user", content: goal, timestamp: Date.now() }]);
+    setUserGoals((prev) => [...prev, { goal, ts: Date.now() }]);
     setLoading(true);
+    onSendGoal(goal);
+  };
 
-    onEvent("goal_submitted", { goal });
-
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
-      const res = await fetch(`${apiUrl}/goal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal }),
-      });
-
-      const data = await res.json();
-
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: JSON.stringify(data.task, null, 2),
-          timestamp: Date.now(),
-        },
-      ]);
-      onEvent("task_completed", data.task);
-    } catch {
-      setMessages((prev) => [
-        ...prev,
-        {
-          role: "assistant",
-          content: "⚠ Connection failed. Is the Orchestrator running on port 3001?",
-          timestamp: Date.now(),
-        },
-      ]);
-    } finally {
-      setLoading(false);
+  const eventTypeStyle = (eventType?: string) => {
+    switch (eventType) {
+      case "tool": return "border-l-4 border-[#00aaff] pl-3";
+      case "payment": return "border-l-4 border-[var(--warning)] pl-3";
+      case "success": return "border-l-4 border-[var(--accent)] pl-3";
+      case "error": return "border-l-4 border-[var(--danger)] pl-3";
+      case "done": return "text-center text-[var(--border-heavy)]";
+      case "task": return "border-l-4 border-[var(--accent)] pl-3 text-[var(--accent)]";
+      default: return "";
     }
   };
 
   return (
     <div className="flex flex-col h-full">
       {/* Title bar */}
-      <div className="px-4 py-3 border-b-3 border-[var(--fg)] bg-[var(--surface)]">
+      <div className="px-4 py-3 border-b-3 border-[var(--fg)] bg-[var(--surface)] flex items-center justify-between">
         <h2 className="text-sm font-black uppercase tracking-wider">
           COMMAND INTERFACE
         </h2>
+        <div className="flex items-center gap-2 mono text-xs">
+          <span className={`status-dot ${status === "connected" ? "active" : status === "connecting" ? "warning" : "error"}`} />
+          <span className="text-[var(--border-heavy)] uppercase">{status}</span>
+        </div>
       </div>
 
       {/* Messages */}
@@ -85,13 +207,12 @@ export function ChatPanel({ onEvent }: ChatPanelProps) {
         {messages.map((msg, i) => (
           <div
             key={i}
-            className={`${
-              msg.role === "user"
+            className={`${msg.role === "user"
                 ? "border-brutal-accent bg-[var(--surface)] p-3"
                 : msg.role === "system"
                   ? "border-l-4 border-[var(--border)] pl-3 text-[var(--border-heavy)] text-sm"
-                  : "border-brutal bg-[var(--surface-raised)] p-3"
-            }`}
+                  : `bg-[var(--surface-raised)] p-3 ${eventTypeStyle(msg.eventType)}`
+              }`}
           >
             <div className="mono text-xs text-[var(--border-heavy)] mb-1 uppercase">
               {msg.role === "user" ? "YOU" : msg.role === "system" ? "SYS" : "MESH"}
@@ -101,8 +222,8 @@ export function ChatPanel({ onEvent }: ChatPanelProps) {
         ))}
         {loading && (
           <div className="border-brutal p-3 bg-[var(--surface)]">
-            <div className="mono text-xs text-[var(--accent)] uppercase">
-              ▓ ORCHESTRATING...
+            <div className="mono text-xs text-[var(--accent)] uppercase animate-pulse">
+              ▓▓▓ ORCHESTRATING...
             </div>
           </div>
         )}
