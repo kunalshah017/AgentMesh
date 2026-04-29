@@ -39,20 +39,20 @@
 
 ```bash
 # Install dependencies
-npm install
+bun install
 
 # Copy environment config
 cp .env.example .env
 # → Fill in API keys
 
 # Start the dashboard
-npm run dev:client
+bun run dev:client
 
 # Start agents (in separate terminals)
-npm run dev:orchestrator
-npm run dev:researcher
-npm run dev:risk-analyst
-npm run dev:executor
+bun run dev:orchestrator
+bun run dev:researcher
+bun run dev:risk-analyst
+bun run dev:executor
 ```
 
 ## Project Structure
@@ -76,18 +76,18 @@ agentmesh/
 
 ## Sponsor Integrations
 
-| Sponsor | Integration |
-|---------|-------------|
-| **0G** | Compute (LLM), Storage (memory), Chain (registry + reputation) |
-| **Gensyn AXL** | All inter-agent P2P communication |
-| **Uniswap** | Trading API for token swaps |
-| **KeeperHub** | MCP for reliable onchain execution |
-| **ENS** | Agent identity & discovery |
-| **x402** | HTTP-native micropayments between agents |
+| Sponsor        | Integration                                                    |
+| -------------- | -------------------------------------------------------------- |
+| **0G**         | Compute (LLM), Storage (memory), Chain (registry + reputation) |
+| **Gensyn AXL** | All inter-agent P2P communication                              |
+| **Uniswap**    | Trading API for token swaps                                    |
+| **KeeperHub**  | MCP for reliable onchain execution                             |
+| **ENS**        | Agent identity & discovery                                     |
+| **x402**       | HTTP-native micropayments between agents                       |
 
 ## Tech Stack
 
-- TypeScript + Node.js (agent runtime)
+- TypeScript + Bun (agent runtime)
 - Next.js 15 + React 19 + Tailwind CSS v4 (frontend)
 - Solidity + Hardhat (smart contracts on 0G Chain)
 - Gensyn AXL (P2P mesh)

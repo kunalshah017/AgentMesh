@@ -14,21 +14,18 @@
     "test": "turbo run test",
     "typecheck": "turbo run typecheck",
     "clean": "turbo run clean",
-    "dev:client": "npm run dev --workspace=client",
-    "dev:orchestrator": "npm run dev --workspace=@agentmesh/orchestrator",
-    "dev:researcher": "npm run dev --workspace=@agentmesh/researcher",
-    "dev:risk-analyst": "npm run dev --workspace=@agentmesh/risk-analyst",
-    "dev:executor": "npm run dev --workspace=@agentmesh/executor",
-    "contracts:compile": "npm run compile --workspace=@agentmesh/contracts",
-    "contracts:test": "npm run test --workspace=@agentmesh/contracts",
-    "contracts:deploy": "npm run deploy --workspace=@agentmesh/contracts"
+    "dev:client": "bun run --filter client dev",
+    "dev:orchestrator": "bun run --filter @agentmesh/orchestrator dev",
+    "dev:researcher": "bun run --filter @agentmesh/researcher dev",
+    "dev:risk-analyst": "bun run --filter @agentmesh/risk-analyst dev",
+    "dev:executor": "bun run --filter @agentmesh/executor dev",
+    "contracts:compile": "bun run --filter @agentmesh/contracts compile",
+    "contracts:test": "bun run --filter @agentmesh/contracts test",
+    "contracts:deploy": "bun run --filter @agentmesh/contracts deploy"
   },
   "devDependencies": {
     "turbo": "^2.5.0",
     "typescript": "^5.8.0"
   },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "packageManager": "npm@10.8.0"
+  "packageManager": "bun@1.2.0"
 }
