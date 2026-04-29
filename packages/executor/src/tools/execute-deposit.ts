@@ -102,27 +102,98 @@ export async function executeDeposit(
   }
 }
 
+// Cached MCP session ID (valid for ~24h)
+let cachedSessionId: string | null = null;
+
+/**
+ * Initialize an MCP session with KeeperHub and return the session ID.
+ */
+async function initKeeperHubSession(apiKey: string): Promise<string> {
+  if (cachedSessionId) return cachedSessionId;
+
+  const response = await fetch(KEEPERHUB.mcpEndpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      Authorization: `Bearer ${apiKey}`,
+    },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "initialize",
+      id: 1,
+      params: {
+        protocolVersion: "2024-11-05",
+        capabilities: {},
+        clientInfo: { name: "AgentMesh", version: "1.0.0" },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`KeeperHub init failed: ${response.status}`);
+  }
+
+  const sessionId = response.headers.get("mcp-session-id");
+  if (!sessionId) {
+    throw new Error("KeeperHub did not return mcp-session-id");
+  }
+
+  cachedSessionId = sessionId;
+  return sessionId;
+}
+
 /**
  * Call a KeeperHub MCP tool via the remote endpoint.
+ * Handles session initialization automatically.
  */
 async function callKeeperHubMCP(
   apiKey: string,
   toolName: string,
   args: Record<string, unknown>,
 ): Promise<MCPResponse> {
+  const sessionId = await initKeeperHubSession(apiKey);
+
   const response = await fetch(KEEPERHUB.mcpEndpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
       Authorization: `Bearer ${apiKey}`,
+      "mcp-session-id": sessionId,
     },
     body: JSON.stringify({
       jsonrpc: "2.0",
       method: "tools/call",
-      id: 1,
+      id: Date.now(),
       params: { name: toolName, arguments: args },
     }),
   });
+
+  if (response.status === 401 || response.status === 403) {
+    // Session expired — re-init and retry once
+    cachedSessionId = null;
+    const newSessionId = await initKeeperHubSession(apiKey);
+    const retry = await fetch(KEEPERHUB.mcpEndpoint, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+        Authorization: `Bearer ${apiKey}`,
+        "mcp-session-id": newSessionId,
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        method: "tools/call",
+        id: Date.now(),
+        params: { name: toolName, arguments: args },
+      }),
+    });
+    if (!retry.ok) {
+      throw new Error(`KeeperHub MCP error: ${retry.status}`);
+    }
+    return (await retry.json()) as MCPResponse;
+  }
 
   if (!response.ok) {
     throw new Error(
