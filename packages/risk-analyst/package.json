@@ -4,6 +4,13 @@
   "private": true,
   "type": "module",
   "main": "./dist/index.js",
+  "exports": {
+    ".": "./dist/index.js",
+    "./tools": {
+      "bun": "./src/tools/index.ts",
+      "default": "./dist/tools/index.js"
+    }
+  },
   "scripts": {
     "build": "tsc",
     "dev": "bun --watch src/index.ts",

@@ -30,8 +30,8 @@
 - ✅ Smart contracts package (Hardhat + Solidity)
 - ✅ Next.js frontend scaffolded (Brutalist UI)
 - ✅ AXL config templates for 4 nodes
-- ⬜ Install all dependencies with bun
-- ⬜ Verify TypeScript compiles across all packages
+- ✅ Install all dependencies with bun
+- ✅ Verify TypeScript compiles across all packages
 
 ### 1.2 AXL P2P Setup
 
@@ -72,27 +72,29 @@
 
 ### 2.1 Orchestrator Agent
 
-- ⬜ Task planner: goal → subtask decomposition via 0G Compute
-- ⬜ Tool discovery: query ENS for tools by capability
+- ✅ Task planner: goal → subtask decomposition via 0G Compute
+- ✅ Tool discovery: query ENS for tools by capability
 - ⬜ AXL MCP client: call remote tools via P2P
-- ⬜ Event system: SSE stream to dashboard
-- ⬜ WebSocket server for real-time dashboard communication
-- ⬜ Conversation state management
+- ✅ Event system: SSE stream to dashboard
+- ✅ WebSocket server for real-time dashboard communication
+- ✅ Conversation state management
+- ✅ Local mode: direct tool calls without AXL (dev/demo)
+- ✅ Fallback keyword-based planner (works without LLM)
 
 ### 2.2 Researcher Tool Provider
 
-- ⬜ MCP server registered with AXL router
-- ⬜ defi-scan: DeFiLlama API integration (real data)
-- ⬜ token-info: CoinGecko API integration (real data)
-- ⬜ protocol-stats: DeFiLlama protocol API (real data)
+- ✅ MCP server registered with AXL router
+- ✅ defi-scan: DeFiLlama API integration (real data)
+- ✅ token-info: CoinGecko API integration (real data)
+- ✅ protocol-stats: DeFiLlama protocol API (real data)
 - ⬜ x402 server: return HTTP 402 + charge per call
 
 ### 2.3 Executor Tool Provider
 
-- ⬜ MCP server registered with AXL router
-- ⬜ Uniswap Trading API: check_approval → quote → swap
+- ✅ MCP server registered with AXL router
+- ✅ Uniswap Trading API: check_approval → quote → swap (mock mode)
 - ⬜ KeeperHub MCP: workflow creation + execution
-- ⬜ check-balance: viem onchain balance queries
+- ✅ check-balance: viem onchain balance queries (mock mode)
 - ⬜ x402 server: charge per execution
 
 ### 2.4 x402 Payment Flow
@@ -130,9 +132,9 @@
 
 ### 3.3 Risk Analyst Tool Provider
 
-- ⬜ MCP server registered with AXL router
-- ⬜ risk-assess: protocol risk scoring
-- ⬜ contract-audit: audit status lookup
+- ✅ MCP server registered with AXL router
+- ✅ risk-assess: protocol risk scoring
+- ✅ contract-audit: audit status lookup
 - ⬜ x402 server: charge per analysis
 
 ### 3.4 End-to-End Debugging
