@@ -111,6 +111,7 @@
       },
       "devDependencies": {
         "@types/bun": "latest",
+        "@types/express": "^5.0.6",
         "typescript": "^5.8.0",
       },
     },

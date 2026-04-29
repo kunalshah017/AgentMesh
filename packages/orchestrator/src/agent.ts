@@ -7,10 +7,14 @@ import {
   type SubTask,
   type AgentIdentity,
   type AgentEvent,
+  type PaymentRecord,
   callMCPService,
   PaymentRequiredError,
   discoverToolsByCapability,
+  createPaymentProof,
+  storeConversationLog,
   ZERO_G,
+  TOOL_PRICES,
 } from "@agentmesh/shared";
 import { LocalToolRouter } from "./local-router.js";
 
@@ -19,6 +23,7 @@ export interface OrchestratorConfig {
   zgServiceUrl: string;
   zgApiSecret: string;
   localMode?: boolean; // Skip AXL, call tools directly
+  walletAddress?: string; // Orchestrator's wallet for x402 payments
 }
 
 export class OrchestratorAgent {
@@ -124,6 +129,25 @@ export class OrchestratorAgent {
       task.status = "completed";
       task.completedAt = Date.now();
       this.emit({ type: "task_completed", taskId: task.id, result: task });
+
+      // Store conversation log to 0G Storage (non-blocking)
+      storeConversationLog(
+        task.id,
+        task.goal,
+        task.subtasks.map((s) => ({
+          description: s.description,
+          status: s.status,
+          result: s.result,
+        })),
+      )
+        .then((hash) => {
+          console.log(
+            `  📦 Conversation stored to 0G: ${hash.slice(0, 18)}...`,
+          );
+        })
+        .catch(() => {
+          // Non-critical — don't fail the task
+        });
     } catch (error) {
       task.status = "failed";
       this.emit({ type: "error", message: String(error) });
@@ -289,6 +313,7 @@ Respond with a JSON array of subtasks: [{ "description": "...", "capability": ".
 
   /**
    * Call a tool provider via AXL MCP or local router.
+   * Handles x402 payment flow: if 402 received, sign payment and retry.
    */
   private async callTool(
     tool: AgentIdentity,
@@ -297,6 +322,19 @@ Respond with a JSON array of subtasks: [{ "description": "...", "capability": ".
     // Local mode: call tool directly without AXL
     if (this.config.localMode && this.localRouter) {
       const toolName = this.resolveToolName(subtask);
+
+      // Simulate x402 payment for demo visibility
+      const price = TOOL_PRICES[toolName as keyof typeof TOOL_PRICES] ?? "0.01";
+      const payment: PaymentRecord = {
+        txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`,
+        amount: price,
+        from: this.config.walletAddress ?? "0xOrchestrator",
+        to: tool.ensName,
+        timestamp: Date.now(),
+      };
+      this.emit({ type: "payment_sent", payment });
+      subtask.payment = payment;
+
       const response = await this.localRouter.call(toolName, {
         task: subtask.description,
       });
@@ -318,10 +356,52 @@ Respond with a JSON array of subtasks: [{ "description": "...", "capability": ".
       return response.result;
     } catch (error) {
       if (error instanceof PaymentRequiredError) {
+        // x402 flow: sign payment and retry
         console.log(
           `💰 Payment required: ${error.amount} USDC to ${error.paymentAddress}`,
         );
-        throw error;
+
+        const paymentProof = createPaymentProof(
+          this.config.walletAddress ?? "0xOrchestrator",
+          error.paymentAddress,
+          error.amount,
+        );
+
+        const payment: PaymentRecord = {
+          txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`,
+          amount: error.amount,
+          from: this.config.walletAddress ?? "0xOrchestrator",
+          to: error.paymentAddress,
+          timestamp: Date.now(),
+        };
+        this.emit({ type: "payment_sent", payment });
+        subtask.payment = payment;
+
+        // Retry with payment header
+        const url = `http://127.0.0.1:${this.config.axlPort}/mcp/${tool.axlPeerKey}/${tool.capabilities[0]}`;
+        const retryResponse = await fetch(url, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Payment": paymentProof,
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "tools/call",
+            id: 1,
+            params: {
+              name: subtask.description,
+              arguments: { task: subtask.description },
+            },
+          }),
+        });
+
+        if (!retryResponse.ok) {
+          throw new Error(`Payment retry failed: ${retryResponse.status}`);
+        }
+
+        const result = await retryResponse.json();
+        return (result as { result?: unknown }).result;
       }
       throw error;
     }

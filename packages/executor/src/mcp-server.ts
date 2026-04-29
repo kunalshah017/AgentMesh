@@ -3,13 +3,27 @@
 import express from "express";
 import type { Server } from "http";
 import type { MCPRequest, MCPResponse } from "@agentmesh/shared";
+import { x402PaymentGate } from "@agentmesh/shared";
 import { executeSwap } from "./tools/execute-swap.js";
 import { executeDeposit } from "./tools/execute-deposit.js";
 import { checkBalance } from "./tools/check-balance.js";
 
+const PAYMENT_ADDRESS =
+  process.env.EXECUTOR_PAYMENT_ADDRESS ??
+  "0x0000000000000000000000000000000000000003";
+
 export function createMCPServer(port: number): Server {
   const app = express();
   app.use(express.json());
+
+  // x402 payment gate
+  app.use(
+    "/mcp",
+    x402PaymentGate({
+      paymentAddress: PAYMENT_ADDRESS,
+      enforce: process.env.X402_ENFORCE === "true",
+    }),
+  );
 
   app.post("/mcp", async (req, res) => {
     const request = req.body as MCPRequest;
@@ -26,10 +40,19 @@ export function createMCPServer(port: number): Server {
               inputSchema: {
                 type: "object",
                 properties: {
-                  tokenIn: { type: "string", description: "Input token symbol" },
-                  tokenOut: { type: "string", description: "Output token symbol" },
+                  tokenIn: {
+                    type: "string",
+                    description: "Input token symbol",
+                  },
+                  tokenOut: {
+                    type: "string",
+                    description: "Output token symbol",
+                  },
                   amount: { type: "string", description: "Amount to swap" },
-                  chain: { type: "string", description: "Chain (default: ethereum)" },
+                  chain: {
+                    type: "string",
+                    description: "Chain (default: ethereum)",
+                  },
                 },
                 required: ["tokenIn", "tokenOut", "amount"],
               },
@@ -40,7 +63,10 @@ export function createMCPServer(port: number): Server {
               inputSchema: {
                 type: "object",
                 properties: {
-                  protocol: { type: "string", description: "Protocol name (e.g., Lido, Aave)" },
+                  protocol: {
+                    type: "string",
+                    description: "Protocol name (e.g., Lido, Aave)",
+                  },
                   token: { type: "string", description: "Token to deposit" },
                   amount: { type: "string", description: "Amount to deposit" },
                 },
@@ -54,7 +80,10 @@ export function createMCPServer(port: number): Server {
                 type: "object",
                 properties: {
                   address: { type: "string", description: "Wallet address" },
-                  token: { type: "string", description: "Token symbol (optional, defaults to ETH)" },
+                  token: {
+                    type: "string",
+                    description: "Token symbol (optional, defaults to ETH)",
+                  },
                 },
                 required: ["address"],
               },
@@ -77,10 +106,19 @@ export function createMCPServer(port: number): Server {
       try {
         switch (name) {
           case "execute-swap":
-            result = await executeSwap(args.tokenIn, args.tokenOut, args.amount, args.chain);
+            result = await executeSwap(
+              args.tokenIn,
+              args.tokenOut,
+              args.amount,
+              args.chain,
+            );
             break;
           case "execute-deposit":
-            result = await executeDeposit(args.protocol, args.token, args.amount);
+            result = await executeDeposit(
+              args.protocol,
+              args.token,
+              args.amount,
+            );
             break;
           case "check-balance":
             result = await checkBalance(args.address, args.token);

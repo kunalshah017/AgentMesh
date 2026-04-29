@@ -3,12 +3,26 @@
 import express from "express";
 import type { Server } from "http";
 import type { MCPRequest, MCPResponse } from "@agentmesh/shared";
+import { x402PaymentGate } from "@agentmesh/shared";
 import { assessRisk } from "./tools/risk-assess.js";
 import { auditContract } from "./tools/contract-audit.js";
+
+const PAYMENT_ADDRESS =
+  process.env.RISK_ANALYST_PAYMENT_ADDRESS ??
+  "0x0000000000000000000000000000000000000002";
 
 export function createMCPServer(port: number): Server {
   const app = express();
   app.use(express.json());
+
+  // x402 payment gate
+  app.use(
+    "/mcp",
+    x402PaymentGate({
+      paymentAddress: PAYMENT_ADDRESS,
+      enforce: process.env.X402_ENFORCE === "true",
+    }),
+  );
 
   app.post("/mcp", async (req, res) => {
     const request = req.body as MCPRequest;
@@ -21,7 +35,8 @@ export function createMCPServer(port: number): Server {
           tools: [
             {
               name: "risk-assess",
-              description: "Assess risk of a DeFi protocol or yield opportunity",
+              description:
+                "Assess risk of a DeFi protocol or yield opportunity",
               inputSchema: {
                 type: "object",
                 properties: {
@@ -33,7 +48,8 @@ export function createMCPServer(port: number): Server {
             },
             {
               name: "contract-audit",
-              description: "Check smart contract audit status and known vulnerabilities",
+              description:
+                "Check smart contract audit status and known vulnerabilities",
               inputSchema: {
                 type: "object",
                 properties: {

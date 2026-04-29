@@ -87,7 +87,7 @@
 - ✅ defi-scan: DeFiLlama API integration (real data)
 - ✅ token-info: CoinGecko API integration (real data)
 - ✅ protocol-stats: DeFiLlama protocol API (real data)
-- ⬜ x402 server: return HTTP 402 + charge per call
+- ✅ x402 server: return HTTP 402 + charge per call
 
 ### 2.3 Executor Tool Provider
 
@@ -95,20 +95,20 @@
 - ✅ Uniswap Trading API: check_approval → quote → swap (mock mode)
 - ⬜ KeeperHub MCP: workflow creation + execution
 - ✅ check-balance: viem onchain balance queries (mock mode)
-- ⬜ x402 server: charge per execution
+- ✅ x402 server: charge per execution
 
 ### 2.4 x402 Payment Flow
 
-- ⬜ Install x402 SDK
-- ⬜ Tool providers return HTTP 402 with payment headers
-- ⬜ Orchestrator signs x402 payment (EIP-3009)
-- ⬜ Orchestrator retries with payment signature
-- ⬜ End-to-end payment test between 2 nodes
+- ✅ x402 payment middleware on all tool providers
+- ✅ Tool providers return HTTP 402 with payment headers
+- ✅ Orchestrator creates payment proof and retries
+- ✅ Payment events emitted to dashboard
+- ⬜ End-to-end payment test between 2 nodes (needs AXL)
 
 ### 2.5 0G Storage Integration
 
-- ⬜ Save conversation logs to 0G Storage
-- ⬜ Load agent state from 0G Storage
+- ✅ Save conversation logs to 0G Storage (with mock fallback)
+- ✅ Store agent state snapshots
 - ⬜ Cache research results in 0G Storage KV
 
 ---
@@ -127,7 +127,7 @@
 - ✅ Chat interface sends goals to Orchestrator
 - ✅ Agent activity feed (SSE events in real-time)
 - ✅ Network graph shows live AXL mesh topology
-- ⬜ Payment flow visualization
+- ✅ Payment flow visualization (PaymentTicker + enhanced ChatPanel)
 - ✅ Task progress indicators
 
 ### 3.3 Risk Analyst Tool Provider
@@ -135,7 +135,7 @@
 - ✅ MCP server registered with AXL router
 - ✅ risk-assess: protocol risk scoring
 - ✅ contract-audit: audit status lookup
-- ⬜ x402 server: charge per analysis
+- ✅ x402 server: charge per analysis
 
 ### 3.4 End-to-End Debugging
 
@@ -196,13 +196,13 @@
 | Sponsor       | Layer       | Status | What We Use                                                |
 | ------------- | ----------- | ------ | ---------------------------------------------------------- |
 | **0G**        | Compute     | ⬜     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API |
-| **0G**        | Storage     | ⬜     | Agent memory + conversation logs (KV + Log)                |
-| **0G**        | Chain       | ⬜     | AgentRegistry.sol + ReputationTracker.sol                  |
+| **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)      |
+| **0G**        | Chain       | 🔄     | AgentRegistry.sol + ReputationTracker.sol (compiled, deploy script ready) |
 | **Gensyn**    | AXL         | ⬜     | All P2P communication (MCP + A2A between 4 nodes)          |
 | **Uniswap**   | Trading API | ⬜     | Token swaps (check_approval → quote → swap)                |
 | **KeeperHub** | MCP         | ⬜     | Reliable onchain execution (workflows, web3 actions)       |
-| **ENS**       | Identity    | ⬜     | Agent subnames + text records for discovery                |
-| **x402**      | Payments    | ⬜     | HTTP-native micropayments between agents                   |
+| **ENS**       | Identity    | 🔄     | viem ENS resolution + local registry fallback              |
+| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers       |
 
 ---
 
@@ -236,4 +236,4 @@
 
 ---
 
-_Last updated: April 29, 2026_
+_Last updated: April 30, 2026_

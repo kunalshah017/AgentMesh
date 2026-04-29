@@ -86,14 +86,16 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
             eventType: "tool",
           });
           break;
-        case "payment_sent":
+        case "payment_sent": {
+          const p = event.payment as { amount?: string; from?: string; to?: string; txHash?: string } | undefined;
           msgs.push({
             role: "mesh",
-            content: `💰 Payment: ${(event.payment as { amount?: string })?.amount ?? "?"} USDC`,
+            content: `💰 Payment: ${p?.amount ?? "?"} USDC → ${p?.to ?? "?"}\n  tx: ${p?.txHash?.slice(0, 18) ?? "?"}...`,
             timestamp: ts,
             eventType: "payment",
           });
           break;
+        }
         case "task_completed": {
           const task = (event.result ?? event.task) as { subtasks?: Array<{ description?: string; status?: string; result?: unknown }> } | undefined;
           if (task?.subtasks) {
@@ -208,10 +210,10 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
           <div
             key={i}
             className={`${msg.role === "user"
-                ? "border-brutal-accent bg-[var(--surface)] p-3"
-                : msg.role === "system"
-                  ? "border-l-4 border-[var(--border)] pl-3 text-[var(--border-heavy)] text-sm"
-                  : `bg-[var(--surface-raised)] p-3 ${eventTypeStyle(msg.eventType)}`
+              ? "border-brutal-accent bg-[var(--surface)] p-3"
+              : msg.role === "system"
+                ? "border-l-4 border-[var(--border)] pl-3 text-[var(--border-heavy)] text-sm"
+                : `bg-[var(--surface-raised)] p-3 ${eventTypeStyle(msg.eventType)}`
               }`}
           >
             <div className="mono text-xs text-[var(--border-heavy)] mb-1 uppercase">

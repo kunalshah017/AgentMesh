@@ -3,13 +3,27 @@
 import express from "express";
 import type { Server } from "http";
 import type { MCPRequest, MCPResponse } from "@agentmesh/shared";
+import { x402PaymentGate } from "@agentmesh/shared";
 import { scanYields } from "./tools/defi-scan.js";
 import { getTokenInfo } from "./tools/token-info.js";
 import { getProtocolStats } from "./tools/protocol-stats.js";
 
+const PAYMENT_ADDRESS =
+  process.env.RESEARCHER_PAYMENT_ADDRESS ??
+  "0x0000000000000000000000000000000000000001";
+
 export function createMCPServer(port: number): Server {
   const app = express();
   app.use(express.json());
+
+  // x402 payment gate — tools/call requires payment
+  app.use(
+    "/mcp",
+    x402PaymentGate({
+      paymentAddress: PAYMENT_ADDRESS,
+      enforce: process.env.X402_ENFORCE === "true",
+    }),
+  );
 
   // MCP endpoint — handles JSON-RPC tool calls
   app.post("/mcp", async (req, res) => {
@@ -27,7 +41,10 @@ export function createMCPServer(port: number): Server {
               inputSchema: {
                 type: "object",
                 properties: {
-                  token: { type: "string", description: "Token symbol (e.g., ETH, USDC)" },
+                  token: {
+                    type: "string",
+                    description: "Token symbol (e.g., ETH, USDC)",
+                  },
                   amount: { type: "string", description: "Amount to invest" },
                 },
                 required: ["token"],
@@ -50,7 +67,10 @@ export function createMCPServer(port: number): Server {
               inputSchema: {
                 type: "object",
                 properties: {
-                  protocol: { type: "string", description: "Protocol name (e.g., Aave, Lido)" },
+                  protocol: {
+                    type: "string",
+                    description: "Protocol name (e.g., Aave, Lido)",
+                  },
                 },
                 required: ["protocol"],
               },

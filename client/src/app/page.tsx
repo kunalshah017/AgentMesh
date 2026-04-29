@@ -4,6 +4,7 @@ import { ChatPanel } from "@/components/ChatPanel";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { NetworkGraph } from "@/components/NetworkGraph";
 import { Header } from "@/components/Header";
+import { PaymentTicker } from "@/components/PaymentTicker";
 import { useOrchestrator } from "@/hooks/useOrchestrator";
 
 export default function Home() {
@@ -27,6 +28,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header status={status} eventCount={events.length} />
+      <PaymentTicker events={events} />
 
       <main className="flex-1 grid grid-cols-12 gap-0 border-t-3 border-[var(--fg)]">
         {/* Chat Panel — Left */}
