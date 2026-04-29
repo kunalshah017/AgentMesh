@@ -198,7 +198,7 @@
 | ------------- | ----------- | ------ | ----------------------------------------------------------------------------- |
 | **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE             |
 | **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)                         |
-| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 4 agents registered              |
+| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 4 agents registered               |
 | **Gensyn**    | AXL         | ⬜     | All P2P communication (MCP + A2A between 4 nodes)                             |
 | **Uniswap**   | Trading API | ⬜     | Token swaps (check_approval → quote → swap)                                   |
 | **KeeperHub** | MCP         | ⬜     | Reliable onchain execution (workflows, web3 actions) — now supports 0G Chain! |
