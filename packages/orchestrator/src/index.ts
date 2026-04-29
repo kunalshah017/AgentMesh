@@ -40,7 +40,8 @@ async function main() {
   agent.registerTool({
     name: "Researcher",
     ensName: ENS_NAMES.researcher,
-    axlPeerKey: "researcher-key",
+    axlPeerKey:
+      "85bae0a7eff775247fba487d780dadc9c988ca191bc3d1304b3c5e64471766b6",
     capabilities: [
       "defi-research",
       "scan-yields",
@@ -52,14 +53,16 @@ async function main() {
   agent.registerTool({
     name: "Risk Analyst",
     ensName: ENS_NAMES.riskAnalyst,
-    axlPeerKey: "risk-analyst-key",
+    axlPeerKey:
+      "f2d4eea2662c03e11ce94ae55a709fef9e24c69a80d076ba778dbad83c815372",
     capabilities: ["risk-analysis", "risk-assess", "contract-audit"],
     pricePerCall: "0.03",
   });
   agent.registerTool({
     name: "Executor",
     ensName: ENS_NAMES.executor,
-    axlPeerKey: "executor-key",
+    axlPeerKey:
+      "60bb86f0c1180c125757f4b017fd1308e12c00f8373e695411630c3c244a271d",
     capabilities: [
       "execution",
       "execute-swap",

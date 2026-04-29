@@ -1,7 +1,0 @@
-{
-  "listen_addr": "0.0.0.0:9032",
-  "private_key_path": "./keys/executor.pem",
-  "bootstrap_peers": [],
-  "mcp_router_port": 9033,
-  "log_level": "info"
-}
