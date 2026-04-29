@@ -91,4 +91,27 @@ contract AgentRegistry {
     function getCapabilities(bytes32 id) external view returns (string[] memory) {
         return agents[id].capabilities;
     }
+
+    /**
+     * @notice Get full agent data by ID.
+     */
+    function getAgent(bytes32 id) external view returns (
+        address owner,
+        string memory ensName,
+        string memory axlPeerKey,
+        string[] memory capabilities,
+        uint256 pricePerCall,
+        uint256 registeredAt,
+        bool active
+    ) {
+        Agent storage a = agents[id];
+        return (a.owner, a.ensName, a.axlPeerKey, a.capabilities, a.pricePerCall, a.registeredAt, a.active);
+    }
+
+    /**
+     * @notice Get all registered agent IDs.
+     */
+    function getAllAgentIds() external view returns (bytes32[] memory) {
+        return agentIds;
+    }
 }

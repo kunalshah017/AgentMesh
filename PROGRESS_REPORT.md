@@ -54,10 +54,10 @@
 ### 1.4 Smart Contracts
 
 - ✅ Get 0G testnet tokens from faucet (6.1 OG)
-- ⬜ Deploy AgentRegistry.sol on 0G Chain testnet
-- ⬜ Deploy ReputationTracker.sol on 0G Chain testnet
+- ✅ Deploy AgentRegistry.sol on 0G Chain testnet
+- ✅ Deploy ReputationTracker.sol on 0G Chain testnet
 - ⬜ Verify contracts on chainscan.0g.ai
-- ⬜ Record contract addresses
+- ✅ Record contract addresses
 
 ### 1.5 ENS Setup
 
@@ -194,25 +194,25 @@
 
 ## Sponsor Integration Checklist
 
-| Sponsor       | Layer       | Status | What We Use                                                               |
-| ------------- | ----------- | ------ | ------------------------------------------------------------------------- |
-| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE         |
-| **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)                     |
-| **0G**        | Chain       | 🔄     | AgentRegistry.sol + ReputationTracker.sol (compiled, deploy script ready) |
-| **Gensyn**    | AXL         | ⬜     | All P2P communication (MCP + A2A between 4 nodes)                         |
-| **Uniswap**   | Trading API | ⬜     | Token swaps (check_approval → quote → swap)                               |
+| Sponsor       | Layer       | Status | What We Use                                                                   |
+| ------------- | ----------- | ------ | ----------------------------------------------------------------------------- |
+| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE             |
+| **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)                         |
+| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 4 agents registered              |
+| **Gensyn**    | AXL         | ⬜     | All P2P communication (MCP + A2A between 4 nodes)                             |
+| **Uniswap**   | Trading API | ⬜     | Token swaps (check_approval → quote → swap)                                   |
 | **KeeperHub** | MCP         | ⬜     | Reliable onchain execution (workflows, web3 actions) — now supports 0G Chain! |
-| **ENS**       | Identity    | 🔄     | viem ENS resolution + local registry fallback                             |
-| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                     |
+| **ENS**       | Identity    | 🔄     | viem ENS resolution + local registry fallback                                 |
+| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                         |
 
 ---
 
 ## Contract Addresses
 
-| Contract          | Network    | Address              |
-| ----------------- | ---------- | -------------------- |
-| AgentRegistry     | 0G Testnet | _pending deployment_ |
-| ReputationTracker | 0G Testnet | _pending deployment_ |
+| Contract          | Network    | Address                                      |
+| ----------------- | ---------- | -------------------------------------------- |
+| AgentRegistry     | 0G Testnet | `0x0B05236c972DbFCe91519a183980F0D5fFd9da28` |
+| ReputationTracker | 0G Testnet | `0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4` |
 
 ---
 
@@ -231,7 +231,7 @@
 
 | Token             | Network          | Status | Faucet                   |
 | ----------------- | ---------------- | ------ | ------------------------ |
-| OG tokens         | 0G Testnet       | ✅     | faucet.0g.ai (6.1 OG)   |
+| OG tokens         | 0G Testnet       | ✅     | faucet.0g.ai (6.1 OG)    |
 | Sepolia ETH       | Ethereum Sepolia | ⬜     | ethglobal.com/faucet     |
 | Base Sepolia USDC | Base Sepolia     | ⬜     | For x402 payment testing |
 

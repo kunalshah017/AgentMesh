@@ -272,7 +272,7 @@ export class OrchestratorAgent {
   private async planTaskWithLLM(goal: string): Promise<SubTask[]> {
     const systemPrompt = `You are a task planner for a DeFi agent mesh. Break the user's goal into subtasks.
 Available tool capabilities: defi-research, risk-analysis, execution.
-Respond with a JSON array of subtasks: [{ "description": "...", "capability": "..." }]`;
+Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "capability": "..."}]`;
 
     const response = await this.llm.chat.completions.create({
       model: ZERO_G.computeModel,
@@ -286,7 +286,10 @@ Respond with a JSON array of subtasks: [{ "description": "...", "capability": ".
     const content = response.choices[0]?.message?.content ?? "[]";
 
     try {
-      const parsed = JSON.parse(content) as Array<{
+      // Extract JSON array even if wrapped in markdown code blocks
+      const jsonMatch = content.match(/\[[\s\S]*\]/);
+      const jsonStr = jsonMatch ? jsonMatch[0] : content;
+      const parsed = JSON.parse(jsonStr) as Array<{
         description: string;
         capability: string;
       }>;

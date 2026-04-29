@@ -71,7 +71,8 @@ async function main() {
       agent.pricePerCall,
     );
     await tx.wait();
-    const id = ethers.keccak256(ethers.toUtf8Bytes(agent.ensName));
+    // Match Solidity: keccak256(abi.encodePacked(ensName))
+    const id = ethers.solidityPackedKeccak256(["string"], [agent.ensName]);
     console.log(`  ✅ ${agent.ensName} → ${id.slice(0, 18)}...`);
   }
 

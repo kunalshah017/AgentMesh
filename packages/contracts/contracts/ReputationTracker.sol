@@ -68,4 +68,18 @@ contract ReputationTracker {
         if (total == 0) return 0;
         return rep.totalResponseTime / total;
     }
+
+    /**
+     * @notice Get full reputation data for an agent.
+     */
+    function getReputation(bytes32 agentId) external view returns (
+        uint256 tasksCompleted,
+        uint256 tasksFailed,
+        uint256 totalResponseTime,
+        uint256 totalEarned,
+        uint256 lastUpdated
+    ) {
+        Reputation memory rep = reputations[agentId];
+        return (rep.tasksCompleted, rep.tasksFailed, rep.totalResponseTime, rep.totalEarned, rep.lastUpdated);
+    }
 }

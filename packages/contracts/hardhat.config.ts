@@ -1,7 +1,9 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 
-const PRIVATE_KEY = process.env.PRIVATE_KEY ?? "0x0000000000000000000000000000000000000000000000000000000000000001";
+const PRIVATE_KEY =
+  process.env.PRIVATE_KEY ??
+  "0x0000000000000000000000000000000000000000000000000000000000000001";
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -13,7 +15,7 @@ const config: HardhatUserConfig = {
   networks: {
     zgTestnet: {
       url: "https://evmrpc-testnet.0g.ai",
-      chainId: 16600,
+      chainId: 16602,
       accounts: [PRIVATE_KEY],
     },
     hardhat: {
