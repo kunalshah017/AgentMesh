@@ -5,6 +5,7 @@ import { createServer } from "./server.js";
 import { OrchestratorAgent } from "./agent.js";
 import { LocalToolRouter } from "./local-router.js";
 import { AXL_PORTS, ENS_NAMES } from "@agentmesh/shared";
+import { discoverToolsFromRegistry } from "@agentmesh/shared";
 import {
   scanYields,
   getTokenInfo,
@@ -15,6 +16,7 @@ import {
   executeSwap,
   executeDeposit,
   checkBalance,
+  payWithAnyToken,
 } from "@agentmesh/executor/tools";
 
 const PORT = parseInt(process.env.ORCHESTRATOR_PORT ?? "3001", 10);
@@ -36,41 +38,56 @@ async function main() {
     walletAddress: process.env.ORCHESTRATOR_WALLET ?? "0xOrchestrator",
   });
 
-  // Register tool providers
-  agent.registerTool({
-    name: "Researcher",
-    ensName: ENS_NAMES.researcher,
-    axlPeerKey:
-      "85bae0a7eff775247fba487d780dadc9c988ca191bc3d1304b3c5e64471766b6",
-    capabilities: [
-      "defi-research",
-      "scan-yields",
-      "token-info",
-      "protocol-stats",
-    ],
-    pricePerCall: "0.01",
-  });
-  agent.registerTool({
-    name: "Risk Analyst",
-    ensName: ENS_NAMES.riskAnalyst,
-    axlPeerKey:
-      "f2d4eea2662c03e11ce94ae55a709fef9e24c69a80d076ba778dbad83c815372",
-    capabilities: ["risk-analysis", "risk-assess", "contract-audit"],
-    pricePerCall: "0.03",
-  });
-  agent.registerTool({
-    name: "Executor",
-    ensName: ENS_NAMES.executor,
-    axlPeerKey:
-      "60bb86f0c1180c125757f4b017fd1308e12c00f8373e695411630c3c244a271d",
-    capabilities: [
-      "execution",
-      "execute-swap",
-      "execute-deposit",
-      "check-balance",
-    ],
-    pricePerCall: "0.05",
-  });
+  // Discover tools: try on-chain registry first, then local fallback
+  const onChainTools = await discoverToolsFromRegistry();
+  if (onChainTools.length > 0) {
+    console.log(
+      `   📋 Discovered ${onChainTools.length} tools from AgentRegistry on 0G Chain`,
+    );
+    for (const tool of onChainTools) {
+      agent.registerTool(tool);
+    }
+  } else {
+    console.log(
+      "   📋 Using local tool registry (on-chain empty or unavailable)",
+    );
+    // Register tool providers (local fallback)
+    agent.registerTool({
+      name: "Researcher",
+      ensName: ENS_NAMES.researcher,
+      axlPeerKey:
+        "85bae0a7eff775247fba487d780dadc9c988ca191bc3d1304b3c5e64471766b6",
+      capabilities: [
+        "defi-research",
+        "scan-yields",
+        "token-info",
+        "protocol-stats",
+      ],
+      pricePerCall: "0.01",
+    });
+    agent.registerTool({
+      name: "Risk Analyst",
+      ensName: ENS_NAMES.riskAnalyst,
+      axlPeerKey:
+        "f2d4eea2662c03e11ce94ae55a709fef9e24c69a80d076ba778dbad83c815372",
+      capabilities: ["risk-analysis", "risk-assess", "contract-audit"],
+      pricePerCall: "0.03",
+    });
+    agent.registerTool({
+      name: "Executor",
+      ensName: ENS_NAMES.executor,
+      axlPeerKey:
+        "60bb86f0c1180c125757f4b017fd1308e12c00f8373e695411630c3c244a271d",
+      capabilities: [
+        "execution",
+        "execute-swap",
+        "execute-deposit",
+        "check-balance",
+        "pay-with-any-token",
+      ],
+      pricePerCall: "0.05",
+    });
+  }
 
   // Set up local router for demo/dev mode
   if (LOCAL_MODE) {
@@ -106,6 +123,13 @@ async function main() {
       checkBalance(
         args.address ?? "0x0000000000000000000000000000000000000000",
         args.token,
+      ),
+    );
+    router.register("pay-with-any-token", (args) =>
+      payWithAnyToken(
+        args.sourceToken ?? "ETH",
+        args.amount ?? "0.05",
+        args.chain,
       ),
     );
     agent.setLocalRouter(router);

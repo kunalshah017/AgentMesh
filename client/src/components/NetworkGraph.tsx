@@ -1,10 +1,10 @@
 "use client";
 
 const NODES = [
-  { id: "orchestrator", label: "ORCHESTRATOR", x: 50, y: 25, color: "var(--accent)", role: "Brain (0G Compute)" },
-  { id: "researcher", label: "RESEARCHER", x: 18, y: 72, color: "#00aaff", role: "DeFi Scanner" },
-  { id: "risk-analyst", label: "RISK ANALYST", x: 50, y: 88, color: "#ffcc00", role: "Risk Assessment" },
-  { id: "executor", label: "EXECUTOR", x: 82, y: 72, color: "#ff5555", role: "Onchain Execution" },
+  { id: "orchestrator", label: "ORCHESTRATOR", x: 50, y: 25, color: "var(--accent)", role: "Brain (0G Compute)", icon: "🧠", sponsor: "0G" },
+  { id: "researcher", label: "RESEARCHER", x: 18, y: 72, color: "#00aaff", role: "DeFi Scanner", icon: "🔍", sponsor: "Uniswap" },
+  { id: "risk-analyst", label: "RISK ANALYST", x: 50, y: 88, color: "#ffcc00", role: "Risk Assessment", icon: "⚠️", sponsor: "0G" },
+  { id: "executor", label: "EXECUTOR", x: 82, y: 72, color: "#ff5555", role: "Onchain Execution", icon: "🔧", sponsor: "KeeperHub" },
 ];
 
 const CONNECTIONS = [
@@ -25,9 +25,15 @@ export function NetworkGraph({ activeNodes }: NetworkGraphProps) {
           P2P MESH NETWORK
           <span className="ml-3 text-[var(--accent)] font-normal">via AXL</span>
         </h2>
-        <span className="mono text-xs text-[var(--border-heavy)]">
-          {activeNodes.size > 0 ? `${activeNodes.size} active` : "idle"}
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-[10px] mono text-green-400 flex items-center gap-1">
+            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            ON-CHAIN
+          </span>
+          <span className="mono text-xs text-[var(--border-heavy)]">
+            {activeNodes.size > 0 ? `${activeNodes.size} active` : "idle"}
+          </span>
+        </div>
       </div>
 
       <div className="flex-1 relative bg-[var(--bg)]">
@@ -131,6 +137,19 @@ export function NetworkGraph({ activeNodes }: NetworkGraphProps) {
                   fontFamily="var(--mono)"
                 >
                   {node.role}
+                </text>
+
+                {/* Sponsor badge */}
+                <text
+                  x={node.x}
+                  y={node.y + 10.5}
+                  textAnchor="middle"
+                  fill="var(--border-heavy)"
+                  fontSize="1.4"
+                  fontFamily="var(--mono)"
+                  opacity={0.6}
+                >
+                  [{node.sponsor}]
                 </text>
               </g>
             );

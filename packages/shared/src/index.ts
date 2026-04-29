@@ -6,3 +6,5 @@ export * from "./axl.js";
 export * from "./storage.js";
 export * from "./ens.js";
 export * from "./x402.js";
+export * from "./reputation.js";
+export * from "./registry.js";

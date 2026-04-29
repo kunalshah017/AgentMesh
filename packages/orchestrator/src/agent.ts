@@ -13,6 +13,7 @@ import {
   discoverToolsByCapability,
   createPaymentProof,
   storeConversationLog,
+  recordReputation,
   ZERO_G,
   TOOL_PRICES,
 } from "@agentmesh/shared";
@@ -120,9 +121,30 @@ export class OrchestratorAgent {
           const result = await this.callTool(tool, subtask);
           subtask.status = "completed";
           subtask.result = result;
+
+          // Record reputation on 0G Chain via KeeperHub (non-blocking)
+          const responseTime = Date.now() - task.createdAt;
+          const earned = parseFloat(tool.pricePerCall ?? "0.01") * 1e6; // USDC 6 decimals
+          recordReputation(tool.ensName, true, responseTime, earned)
+            .then((r) => {
+              if (r.status !== "skipped") {
+                console.log(
+                  `   ⛓️ Reputation: ${tool.ensName} +1 success (${r.status})`,
+                );
+              }
+            })
+            .catch(() => {});
         } catch (error) {
           subtask.status = "failed";
           subtask.result = { error: String(error) };
+
+          // Record failure reputation (non-blocking)
+          recordReputation(
+            tool.ensName,
+            false,
+            Date.now() - task.createdAt,
+            0,
+          ).catch(() => {});
         }
       }
 
