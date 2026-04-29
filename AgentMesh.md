@@ -452,10 +452,12 @@ curl -X POST http://127.0.0.1:9002/mcp/{researcher_key}/defi-scan \
 - Read: `web3/check-balance`, `web3/check-token-balance`, `web3/read-contract`
 - Write: `web3/transfer-funds`, `web3/transfer-token`, `web3/write-contract`
 
-**Supported chains:** Ethereum, Base, Arbitrum, Polygon, Sepolia
+**Supported chains:** Ethereum, Base, Arbitrum, Polygon, Sepolia, **0G Chain** (newly added!)
 **DeFi Plugins:** Aave V3, Compound V3, Uniswap, Lido, Morpho, Pendle, Curve, Yearn V3, Sky (MakerDAO)
 **Payment:** ~$0.05/call via x402 (Base USDC)
 **Hard limits:** Max 100 USDC/transfer, only Base USDC
+
+> **New:** KeeperHub now supports 0G Chain. This means our Executor can use KeeperHub for BOTH Uniswap swaps on Base/Sepolia AND contract calls (reputation updates, registry) on 0G Chain — single execution path, full retry/gas logic everywhere.
 
 ---
 
@@ -627,12 +629,12 @@ Tool Provider returns HTTP 402 + PaymentRequired header
 
 ### Key Technical Decisions
 
-| Decision                             | Why                                                                                                               |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
-| AXL over WebSocket                   | P2P, E2E encrypted, NAT traversal, built-in MCP/A2A, **what Gensyn judges for**                                   |
-| 0G Compute over OpenAI               | Decentralized, pay-per-request onchain, OpenAI-compatible drop-in, **what 0G judges for**                         |
-| KeeperHub over direct contract calls | Auto retry, gas optimization, private routing, audit trail, pre-built DeFi plugins, **what KeeperHub judges for** |
-| x402 over direct transfers           | HTTP-native, facilitator verifies, standard across ecosystem, **KeeperHub already uses it**                       |
+| Decision                             | Why                                                                                                                                          |
+| ------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| AXL over WebSocket                   | P2P, E2E encrypted, NAT traversal, built-in MCP/A2A, **what Gensyn judges for**                                                              |
+| 0G Compute over OpenAI               | Decentralized, pay-per-request onchain, OpenAI-compatible drop-in, **what 0G judges for**                                                    |
+| KeeperHub over direct contract calls | Auto retry, gas optimization, private routing, audit trail, pre-built DeFi plugins, **now supports 0G Chain**, **what KeeperHub judges for** |
+| x402 over direct transfers           | HTTP-native, facilitator verifies, standard across ecosystem, **KeeperHub already uses it**                                                  |
 
 ---
 

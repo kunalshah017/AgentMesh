@@ -45,14 +45,15 @@
 
 ### 1.3 0G Compute Integration
 
-- ⬜ Get 0G API key (app-sk-... from build.0g.ai)
-- ⬜ Deposit OG tokens from faucet.0g.ai
-- ⬜ Verify LLM calls work (qwen/qwen-2.5-7b-instruct)
+- ✅ Get 0G API key (app-sk-... via 0g-compute-cli)
+- ✅ Deposit OG tokens from faucet.0g.ai (6.1 OG deposited)
+- ✅ Fund provider: qwen/qwen-2.5-7b-instruct (0xa48f...)
+- ✅ Verify LLM calls work (Status 200, response confirmed)
 - ⬜ Test task planning prompt with 0G Compute
 
 ### 1.4 Smart Contracts
 
-- ⬜ Get 0G testnet tokens from faucet
+- ✅ Get 0G testnet tokens from faucet (6.1 OG)
 - ⬜ Deploy AgentRegistry.sol on 0G Chain testnet
 - ⬜ Deploy ReputationTracker.sol on 0G Chain testnet
 - ⬜ Verify contracts on chainscan.0g.ai
@@ -93,7 +94,7 @@
 
 - ✅ MCP server registered with AXL router
 - ✅ Uniswap Trading API: check_approval → quote → swap (mock mode)
-- ⬜ KeeperHub MCP: workflow creation + execution
+- ⬜ KeeperHub MCP: workflow creation + execution (now supports 0G Chain!)
 - ✅ check-balance: viem onchain balance queries (mock mode)
 - ✅ x402 server: charge per execution
 
@@ -193,16 +194,16 @@
 
 ## Sponsor Integration Checklist
 
-| Sponsor       | Layer       | Status | What We Use                                                |
-| ------------- | ----------- | ------ | ---------------------------------------------------------- |
-| **0G**        | Compute     | ⬜     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API |
-| **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)      |
+| Sponsor       | Layer       | Status | What We Use                                                               |
+| ------------- | ----------- | ------ | ------------------------------------------------------------------------- |
+| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE         |
+| **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)                     |
 | **0G**        | Chain       | 🔄     | AgentRegistry.sol + ReputationTracker.sol (compiled, deploy script ready) |
-| **Gensyn**    | AXL         | ⬜     | All P2P communication (MCP + A2A between 4 nodes)          |
-| **Uniswap**   | Trading API | ⬜     | Token swaps (check_approval → quote → swap)                |
-| **KeeperHub** | MCP         | ⬜     | Reliable onchain execution (workflows, web3 actions)       |
-| **ENS**       | Identity    | 🔄     | viem ENS resolution + local registry fallback              |
-| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers       |
+| **Gensyn**    | AXL         | ⬜     | All P2P communication (MCP + A2A between 4 nodes)                         |
+| **Uniswap**   | Trading API | ⬜     | Token swaps (check_approval → quote → swap)                               |
+| **KeeperHub** | MCP         | ⬜     | Reliable onchain execution (workflows, web3 actions) — now supports 0G Chain! |
+| **ENS**       | Identity    | 🔄     | viem ENS resolution + local registry fallback                             |
+| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                     |
 
 ---
 
@@ -219,9 +220,9 @@
 
 | Service                  | Status | Where to Get                     |
 | ------------------------ | ------ | -------------------------------- |
-| 0G Compute               | ⬜     | build.0g.ai → API Keys           |
-| Uniswap                  | ⬜     | developers.uniswap.org/dashboard |
-| KeeperHub                | ⬜     | app.keeperhub.com                |
+| 0G Compute               | ✅     | 0g-compute-cli get-secret        |
+| Uniswap                  | ✅     | developers.uniswap.org/dashboard |
+| KeeperHub                | ✅     | app.keeperhub.com                |
 | Alchemy/Infura (Sepolia) | ⬜     | For ENS resolution               |
 
 ---
@@ -230,7 +231,7 @@
 
 | Token             | Network          | Status | Faucet                   |
 | ----------------- | ---------------- | ------ | ------------------------ |
-| OG tokens         | 0G Testnet       | ⬜     | faucet.0g.ai             |
+| OG tokens         | 0G Testnet       | ✅     | faucet.0g.ai (6.1 OG)   |
 | Sepolia ETH       | Ethereum Sepolia | ⬜     | ethglobal.com/faucet     |
 | Base Sepolia USDC | Base Sepolia     | ⬜     | For x402 payment testing |
 
