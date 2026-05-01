@@ -1,10 +1,10 @@
 "use client";
 
 const NODES = [
-  { id: "orchestrator", label: "ORCHESTRATOR", x: 50, y: 25, color: "var(--accent)", role: "Brain (0G Compute)", icon: "🧠", sponsor: "0G" },
-  { id: "researcher", label: "RESEARCHER", x: 18, y: 72, color: "#00aaff", role: "DeFi Scanner", icon: "🔍", sponsor: "Uniswap" },
-  { id: "risk-analyst", label: "RISK ANALYST", x: 50, y: 88, color: "#ffcc00", role: "Risk Assessment", icon: "⚠️", sponsor: "0G" },
-  { id: "executor", label: "EXECUTOR", x: 82, y: 72, color: "#ff5555", role: "Onchain Execution", icon: "🔧", sponsor: "KeeperHub" },
+  { id: "orchestrator", label: "ORCHESTRATOR", x: 50, y: 22, color: "#FF6B6B", role: "Brain (0G Compute)", icon: "🧠", sponsor: "0G" },
+  { id: "researcher", label: "RESEARCHER", x: 16, y: 72, color: "#00aaff", role: "DeFi Scanner", icon: "🔍", sponsor: "Uniswap" },
+  { id: "risk-analyst", label: "RISK ANALYST", x: 50, y: 88, color: "#FFD93D", role: "Risk Assessment", icon: "⚠️", sponsor: "0G" },
+  { id: "executor", label: "EXECUTOR", x: 84, y: 72, color: "#C4B5FD", role: "Onchain Execution", icon: "🔧", sponsor: "KeeperHub" },
 ];
 
 const CONNECTIONS = [
@@ -20,66 +20,68 @@ interface NetworkGraphProps {
 export function NetworkGraph({ activeNodes }: NetworkGraphProps) {
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b-3 border-[var(--fg)] bg-[var(--surface)] flex items-center justify-between">
+      {/* Header bar */}
+      <div className="px-4 py-3 border-b-4 border-black bg-neo-white flex items-center justify-between">
         <h2 className="text-sm font-black uppercase tracking-wider">
           P2P MESH NETWORK
-          <span className="ml-3 text-[var(--accent)] font-normal">via AXL</span>
+          <span className="ml-2 bg-black text-neo-white px-2 py-0.5 text-[10px] font-black">AXL</span>
         </h2>
         <div className="flex items-center gap-3">
-          <span className="text-[10px] mono text-green-400 flex items-center gap-1">
-            <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-            ON-CHAIN
+          <span className="bg-neo-secondary border-2 border-black px-2 py-0.5 text-[10px] font-black uppercase">
+            ON-CHAIN ✓
           </span>
-          <span className="mono text-xs text-[var(--border-heavy)]">
-            {activeNodes.size > 0 ? `${activeNodes.size} active` : "idle"}
+          <span className="mono text-xs font-black">
+            {activeNodes.size > 0 ? `${activeNodes.size} ACTIVE` : "IDLE"}
           </span>
         </div>
       </div>
 
-      <div className="flex-1 relative bg-[var(--bg)]">
+      {/* Graph area */}
+      <div className="flex-1 relative bg-neo-bg pattern-grid">
         <svg
           viewBox="0 0 100 100"
           className="w-full h-full"
           preserveAspectRatio="xMidYMid meet"
         >
-          <defs>
-            {NODES.map((node) => (
-              <filter key={`glow-${node.id}`} id={`glow-${node.id}`}>
-                <feGaussianBlur stdDeviation="1.5" result="blur" />
-                <feMerge>
-                  <feMergeNode in="blur" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
-            ))}
-          </defs>
-
-          {/* Connection lines */}
+          {/* Connection lines — thick and brutalist */}
           {CONNECTIONS.map((conn) => {
             const from = NODES.find((n) => n.id === conn.from)!;
             const to = NODES.find((n) => n.id === conn.to)!;
             const isActive = activeNodes.has(conn.from) || activeNodes.has(conn.to);
             return (
-              <line
-                key={`${conn.from}-${conn.to}`}
-                x1={from.x}
-                y1={from.y}
-                x2={to.x}
-                y2={to.y}
-                stroke={isActive ? to.color : "var(--border)"}
-                strokeWidth={isActive ? "0.5" : "0.3"}
-                strokeDasharray={isActive ? "none" : "1,1"}
-                opacity={isActive ? 1 : 0.4}
-              >
+              <g key={`${conn.from}-${conn.to}`}>
+                {/* Shadow line */}
+                <line
+                  x1={from.x + 0.4}
+                  y1={from.y + 0.4}
+                  x2={to.x + 0.4}
+                  y2={to.y + 0.4}
+                  stroke="#000"
+                  strokeWidth={isActive ? "0.8" : "0.5"}
+                  opacity={0.3}
+                />
+                {/* Main line */}
+                <line
+                  x1={from.x}
+                  y1={from.y}
+                  x2={to.x}
+                  y2={to.y}
+                  stroke={isActive ? "#000" : "#000"}
+                  strokeWidth={isActive ? "0.7" : "0.4"}
+                  strokeDasharray={isActive ? "none" : "2,1"}
+                  opacity={isActive ? 1 : 0.4}
+                />
+                {/* Data flow animation */}
                 {isActive && (
-                  <animate
-                    attributeName="stroke-opacity"
-                    values="0.4;1;0.4"
-                    dur="1.5s"
-                    repeatCount="indefinite"
-                  />
+                  <circle r="0.8" fill={to.color}>
+                    <animateMotion
+                      dur="2s"
+                      repeatCount="indefinite"
+                      path={`M${from.x},${from.y} L${to.x},${to.y}`}
+                    />
+                  </circle>
                 )}
-              </line>
+              </g>
             );
           })}
 
@@ -87,70 +89,105 @@ export function NetworkGraph({ activeNodes }: NetworkGraphProps) {
           {NODES.map((node) => {
             const isActive = activeNodes.has(node.id);
             return (
-              <g key={node.id} filter={isActive ? `url(#glow-${node.id})` : undefined}>
-                {/* Outer ring (pulse when active) */}
-                {isActive && (
-                  <circle cx={node.x} cy={node.y} r="5.5" fill="none" stroke={node.color} strokeWidth="0.3" opacity="0.5">
-                    <animate attributeName="r" values="4.5;6.5;4.5" dur="2s" repeatCount="indefinite" />
-                    <animate attributeName="opacity" values="0.5;0.1;0.5" dur="2s" repeatCount="indefinite" />
-                  </circle>
-                )}
+              <g key={node.id}>
+                {/* Node card shadow */}
+                <rect
+                  x={node.x - 8.5}
+                  y={node.y - 5.5}
+                  width="17"
+                  height="11"
+                  fill="#000"
+                  rx="0"
+                />
+                {/* Node card */}
+                <rect
+                  x={node.x - 9}
+                  y={node.y - 6}
+                  width="17"
+                  height="11"
+                  fill={isActive ? node.color : "#fff"}
+                  stroke="#000"
+                  strokeWidth="0.6"
+                  rx="0"
+                />
 
-                {/* Node circle */}
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r="4"
-                  fill="var(--bg)"
-                  stroke={node.color}
-                  strokeWidth={isActive ? "0.8" : "0.5"}
-                />
-                <circle
-                  cx={node.x}
-                  cy={node.y}
-                  r={isActive ? "2" : "1.5"}
-                  fill={node.color}
-                  opacity={isActive ? 1 : 0.6}
-                />
+                {/* Icon */}
+                <text
+                  x={node.x}
+                  y={node.y - 1}
+                  textAnchor="middle"
+                  fontSize="3.5"
+                  dominantBaseline="middle"
+                >
+                  {node.icon}
+                </text>
 
                 {/* Label */}
                 <text
                   x={node.x}
-                  y={node.y - 6.5}
+                  y={node.y + 3.5}
                   textAnchor="middle"
-                  fill={node.color}
-                  fontSize="2.5"
-                  fontWeight="bold"
-                  fontFamily="var(--mono)"
-                  opacity={isActive ? 1 : 0.7}
+                  fill="#000"
+                  fontSize="1.8"
+                  fontWeight="900"
+                  fontFamily="'Space Grotesk', sans-serif"
                 >
                   {node.label}
                 </text>
 
-                {/* Role */}
+                {/* Role below card */}
                 <text
                   x={node.x}
-                  y={node.y + 7.5}
+                  y={node.y + 8}
                   textAnchor="middle"
-                  fill={isActive ? node.color : "var(--border-heavy)"}
-                  fontSize="1.8"
-                  fontFamily="var(--mono)"
+                  fill="#000"
+                  fontSize="1.4"
+                  fontWeight="700"
+                  fontFamily="'Space Grotesk', sans-serif"
+                  opacity={0.6}
                 >
                   {node.role}
                 </text>
 
                 {/* Sponsor badge */}
+                <rect
+                  x={node.x + 5}
+                  y={node.y - 7.5}
+                  width={node.sponsor.length * 1.6 + 2}
+                  height="3"
+                  fill={node.color}
+                  stroke="#000"
+                  strokeWidth="0.3"
+                  transform={`rotate(3, ${node.x + 5}, ${node.y - 7.5})`}
+                />
                 <text
-                  x={node.x}
-                  y={node.y + 10.5}
-                  textAnchor="middle"
-                  fill="var(--border-heavy)"
+                  x={node.x + 6}
+                  y={node.y - 5.7}
+                  fill="#000"
                   fontSize="1.4"
-                  fontFamily="var(--mono)"
-                  opacity={0.6}
+                  fontWeight="900"
+                  fontFamily="'Space Grotesk', sans-serif"
+                  transform={`rotate(3, ${node.x + 5}, ${node.y - 7.5})`}
                 >
-                  [{node.sponsor}]
+                  {node.sponsor}
                 </text>
+
+                {/* Active pulse */}
+                {isActive && (
+                  <rect
+                    x={node.x - 10}
+                    y={node.y - 7}
+                    width="19"
+                    height="13"
+                    fill="none"
+                    stroke={node.color}
+                    strokeWidth="0.4"
+                    rx="0"
+                    opacity="0.6"
+                  >
+                    <animate attributeName="opacity" values="0.6;0.1;0.6" dur="1.5s" repeatCount="indefinite" />
+                  </rect>
+                )}
               </g>
             );
           })}

@@ -259,7 +259,7 @@
 
 ---
 
-_Last updated: April 30, 2026 (evening — all core features complete)_
+_Last updated: May 1, 2026 (deep competitor GitHub analysis complete — priorities restructured)_
 
 ---
 
@@ -306,41 +306,125 @@ _Last updated: April 30, 2026 (evening — all core features complete)_
 
 ### 🔑 COMPETITIVE DIFFERENTIATORS — Must Be Visible in Demo
 
-vs **SwarmNet** (same sponsors, same 4-agent pattern):
+> **UPDATED May 1 based on GitHub repo deep-dive.** Previous analysis had errors (e.g., Scholar Swarm DOES use AXL). Corrected below.
+
+vs **SwarmNet** (same sponsors, same 4-agent pattern — **LOW THREAT**, repo is scaffold-only):
 
 1. ✅ Open marketplace (they have hardcoded pipeline) — make sure demo shows "discovering" tools dynamically
 2. ⚠️ x402 payments between agents (they have NONE) — MUST be visibly working, not just logged
 3. ⚠️ ENS discovery (they have NONE) — MUST show real ENS resolution, not local map
-4. ✅ Tool Provider architecture (1 LLM, N dumb tools) — our efficiency angle
+4. ✅ Tool Provider architecture (1 LLM, N dumb tools) — they use 3 LLMs (wasteful), we use 1
+5. ✅ They have no tests, no live demo, template README with "[YOUR NAME]" in team section
 
-vs **QUORUM** (AXL + x402 + Uniswap):
+vs **QUORUM** (AXL + Uniswap + KeeperHub — **HIGH THREAT**, real Base mainnet tx):
 
-1. ⚠️ pay-with-any-token (they also claim this) — we need it actually working
+1. ⚠️ pay-with-any-token (they HAVE this — real 1 USDC→WETH mainnet swap proven)
 2. ✅ 0G Compute (they don't use it) — decentralized AI angle
 3. ✅ ENS (they don't use it) — agent discovery angle
+4. ✅ Open marketplace (they have hardcoded 5-agent pipeline)
+5. ❌ They have REAL mainnet Base tx `0xc03b8350...` — we have NO real payment yet
+6. ❌ They have 3 FEEDBACK files (Gensyn, KeeperHub, Uniswap) + CHAOS-TEST.md
+7. **Strategy:** Must get real x402 payment (even testnet) to close gap. Our breadth (0G Compute + ENS + marketplace) is broader.
 
-vs **DoloX** (ENS + x402 + Uniswap + ERC-8004):
+vs **DoloX** (ENS + x402 + Uniswap + ERC-8004 — **LOW THREAT**, 1 commit only):
 
 1. ✅ AXL P2P mesh (they don't have it) — decentralized communication
 2. ✅ 0G Compute (they don't have it) — our LLM is decentralized
-3. ⚠️ On-chain reputation (they use ERC-8004, we use custom) — must be actually working
+3. ✅ They have 1 commit total, no README, no agent code. Far behind their Discord claims.
 
-vs **Scholar Swarm** (0G all layers + KeeperHub + iNFTs + LayerZero):
+vs **Scholar Swarm** (0G + AXL + KeeperHub + LayerZero — **#1 THREAT**, 20/20 spikes):
 
-1. ✅ AXL P2P mesh (they don't use AXL) — our Gensyn edge
+1. ❌ They DO use AXL — 5 AXL nodes, cross-ISP mesh (Turkey↔EU VPS), MCP-over-AXL with SearXNG
 2. ✅ Uniswap Trading API (they don't use it) — our Uniswap edge
 3. ✅ ENS identity (they don't use it) — our ENS edge
 4. ✅ x402 payments (they don't use it) — our payment protocol edge
-5. ⚠️ They have TEE-attested inference + 11 contracts + LayerZero cross-chain — deeper on 0G specifically
-6. **Strategy:** Don't compete on 0G depth alone. Win on multi-sponsor breadth (5 sponsors all real) + open marketplace narrative
+5. ✅ Open marketplace (they have fixed 5-agent bounty pipeline)
+6. ❌ They have: 20/20 spike tests, real Circle USDC distribution, LayerZero V2 cross-chain, 9 contracts on 2 chains, iNFTs, published SDK, live VPS auto-bounty cadence, live Vercel frontend
+7. ❌ They have honest known limitations (8 items), AI audit trail, decision logs, day-by-day notes
+8. **Strategy:** We CANNOT compete on 0G depth or AXL depth. Win on: (a) marketplace narrative (permissionless tool registration — they don't have this), (b) Uniswap + ENS sponsors they don't target, (c) pay-with-any-token, (d) 5-sponsor breadth.
 
-vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs):
+vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs — **HIGH THREAT**, live VPS deployment):
 
 1. ✅ 0G Compute (they can't use it — faucet blocked) — we have live LLM
 2. ✅ Uniswap + x402 + ENS (they have none of these)
-3. ⚠️ They have 84K+ AXL messages + 7-message custom protocol — deeper AXL narrative
-4. ⚠️ They have 26 real KeeperHub executions + KEEPERHUBFEEDBACK.md with sponsor engagement
-5. **Strategy:** They focus on resilience/anti-fragility. We focus on marketplace/commerce. Different angles, same sponsors.
+3. ❌ They have 84K+ AXL messages + 7-message custom protocol — deeper AXL narrative
+4. ❌ They have 26 real KeeperHub executions + KEEPERHUB_FEEDBACK.md with sponsor engagement (KH shipped a fix!)
+5. ❌ They have live deployment at hydra.hacklabs.in, 176+ commits, 4 real attacks captured
+6. **Strategy:** Different angle entirely. They = resilience/anti-fragility. We = marketplace/commerce. Don't compete on same axis.
+
+vs **Skillname** (ENS + 0G Storage + KeeperHub — **MEDIUM THREAT** for ENS prize only):
+
+1. ✅ We have agents + orchestration (they have NO agents, just a resolution layer)
+2. ✅ We have AXL P2P mesh (they don't)
+3. ⚠️ Their ENS story is cleaner: "1 ENS = 1 atomic skill" is more granular than our "1 ENS = 1 tool provider"
+4. ✅ We are a CONSUMER of the ENS-discovery pattern; they are just INFRASTRUCTURE with no usage
+5. **Strategy:** If competing for ENS prize, emphasize that we actually USE ENS for runtime discovery, not just register records.
+
+---
+
+## WIN STRATEGY — What Makes AgentMesh Uniquely Better (May 1 Update)
+
+> Based on deep GitHub analysis of all high-threat competitors. This section defines our UNIQUE angles that NO competitor has.
+
+### Our 5 Unmatched Differentiators
+
+| #   | Feature                                                 | Why It's Unique                                                                          | Who Comes Close                                                                                         | Gap                                   |
+| --- | ------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- | ------------------------------------- |
+| 1   | **Open Marketplace (permissionless tool registration)** | Tools register at runtime, get discovered dynamically. No hardcoded pipelines.           | Nobody — Scholar Swarm, QUORUM, Hydra, SwarmNet ALL have fixed agent sets                               | This is our #1 narrative              |
+| 2   | **1 Brain + N Tools architecture**                      | Single LLM orchestrator, lightweight MCP tool providers. Cheaper, faster, extensible.    | SwarmNet uses 3 LLMs (wasteful). Scholar Swarm has 5 agents all with attested inference.                | We're the ONLY efficient architecture |
+| 3   | **5-Sponsor Breadth**                                   | 0G (all 3 layers) + Gensyn AXL + Uniswap + KeeperHub + ENS                               | Scholar Swarm: 3 (0G+AXL+KH). QUORUM: 3 (AXL+Uniswap+KH). Hydra: 3 (AXL+0G+KH)                          | Nobody else covers all 5              |
+| 4   | **Pay-with-any-token (Uniswap AI skill)**               | Agents pay in ANY token → auto-swaps to USDC → tool gets paid. Specific Uniswap feature. | QUORUM has Uniswap swap but not the AI skill specifically                                               | Must wire this to claim it            |
+| 5   | **KeeperHub on 0G Chain**                               | Reputation updates via KeeperHub executing on 0G Chain                                   | Hydra explicitly says "0G not supported on KH" (their F-3 finding). Scholar Swarm uses KH on Base only. | We'd be FIRST to demo this            |
+
+### Narrative for Judges (the pitch)
+
+> "Everyone else built a fixed swarm of agents. We built an **open MCP Tool Marketplace** — where any developer can deploy an MCP tool, register it on-chain, connect their wallet, and **start earning**. Users connect their wallet, submit tasks, and the Orchestrator discovers the right tools via ENS, coordinates via AXL mesh, and pays tool providers per-call via x402. Only the Orchestrator needs AI (0G Compute). Tool providers are lightweight functions — no GPU required. Publish a tool, get discovered, get paid. This is the **App Store for AI tools, decentralized.**"
+
+### What We DON'T Compete On (avoid these claims)
+
+- ❌ Don't claim deepest 0G integration (Scholar Swarm has 9 contracts + LayerZero + iNFTs)
+- ❌ Don't claim deepest AXL usage (Scholar Swarm has cross-ISP + SearXNG-over-AXL; Hydra has 84K messages)
+- ❌ Don't claim deepest KeeperHub (Hydra has 26 executions + feedback that shipped a bug fix)
+- ❌ Don't claim real mainnet payments (QUORUM has a real Base mainnet swap)
+
+### What We DO Claim (double down)
+
+- ✅ **Only permissionless tool marketplace** in the hackathon
+- ✅ **Only project** where a NEW tool can register and get discovered without code changes
+- ✅ **Only project** with a wallet-connected marketplace where tool publishers EARN per-call
+- ✅ **Most efficient architecture** — 1 LLM serves the whole marketplace
+- ✅ **Broadest sponsor integration** — 5 sponsors, all real
+- ✅ **Pay-with-any-token** — agents don't need to hold USDC, they can pay in ETH/any ERC20
+- ✅ **First project** to demonstrate KeeperHub executing on 0G Chain
+
+### Priority Execution Order (remaining ~36 hours)
+
+> Sequenced for maximum judge impact per hour invested.
+
+| Priority         | Task                                                            | Time Est. | Judge Impact | Why                                                           |
+| ---------------- | --------------------------------------------------------------- | --------- | ------------ | ------------------------------------------------------------- |
+| 🔴 P0            | **4.5.20** Wallet Connect + user wallet flow                    | 2-3h      | VERY HIGH    | Marketplace can't exist without wallets. Economic backbone.   |
+| 🔴 P0            | **4.5.5** Open Marketplace full flow (publish + discover + pay) | 3-4h      | VERY HIGH    | Our #1 differentiator. Must show complete user journey.       |
+| 🔴 P0            | **4.5.4** KeeperHub × 0G Chain reputation                       | 2-3h      | VERY HIGH    | Unique claim nobody else has. Proves KH works on 0G.          |
+| 🔴 P0            | **4.5.1** Real x402 payment (even 1 tx)                         | 2-3h      | HIGH         | QUORUM has mainnet tx. We need at least testnet.              |
+| 🟠 P1            | **4.5.21** Landing page (feature showcase)                      | 3-4h      | HIGH         | First impression. Judges land here before reading code.       |
+| 🟠 P1            | **4.5.13** Verifiable Artifacts table in README                 | 1h        | HIGH         | Judges verify claims in 30 seconds. This lets them.           |
+| 🟠 P1            | **4.5.12** FEEDBACK-GENSYN.md + FEEDBACK-KEEPERHUB.md           | 1-2h      | HIGH         | Builder Feedback bounty + judges see sponsor depth            |
+| 🟠 P1            | **4.5.14** Honest Known Limitations                             | 30m       | MEDIUM-HIGH  | Builds trust. Top projects all have this.                     |
+| 🟠 P1            | **4.5.17** Real KeeperHub execution receipt                     | 1-2h      | HIGH         | Proves we USED KeeperHub, not just connected                  |
+| 🟡 P2            | **4.5.6** Tool Provider arch visibility                         | 2h        | MEDIUM       | Unique but UI polish, not substance                           |
+| 🟡 P2            | **4.5.8** Deploy frontend to Vercel                             | 1h        | MEDIUM       | Both top competitors have live URLs                           |
+| 🟡 P2            | **4.5.7** 0G Storage real upload                                | 1-2h      | MEDIUM       | Shows 0G Storage works, not just claimed                      |
+| 🟡 P2            | **4.5.2** Pay-with-any-token                                    | 2-3h      | MEDIUM       | Unique Uniswap feature but complex                            |
+| 🟡 P2            | **4.5.15** AI_USAGE.md                                          | 30m       | LOW-MEDIUM   | ETHGlobal requirement, quick to write                         |
+| 🟡 P2            | **4.5.16** demo.sh one-command boot                             | 1h        | LOW-MEDIUM   | Polish for video recording                                    |
+| ⚪ P3            | **4.5.3** ENS on-chain                                          | 2-3h      | MEDIUM       | Nice but Skillname has cleaner ENS story anyway               |
+| ⚪ P3            | **4.5.18** Cross-network AXL proof                              | 2-4h      | MEDIUM       | Scholar Swarm + QUORUM already have this; we'd be catching up |
+| ⚪ P3            | **4.5.9** A2A protocol demo                                     | 1-2h      | LOW          | AXL supports it, can document without wiring                  |
+| ⚪ P3            | **4.5.19** Automated run liveness                               | 1-2h      | LOW          | Nice-to-have, not differentiating                             |
+| ⚪ P3            | **4.5.10** MCP service coverage                                 | 1-2h      | LOW          | More tools = more impressive but not critical                 |
+| ⚪ P3            | **4.5.11** Real swap execution                                  | 2-3h      | LOW          | Uniswap API may not support testnet                           |
+| 🔴 **MANDATORY** | **4.3** Demo video (2-4 min)                                    | 3-4h      | CRITICAL     | Cannot submit without this. Schedule May 2.                   |
 
 ---
 
@@ -348,7 +432,7 @@ vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs):
 
 > These items close the gaps identified above. Prioritized by judge impact.
 
-### 4.5.1 Make x402 Real (HIGH PRIORITY)
+### 4.5.1 Make x402 Real (🔴 P0 — EXISTENTIAL)
 
 - ⬜ Get Base Sepolia USDC from faucet (or bridge)
 - ⬜ Fund Orchestrator wallet with Base Sepolia USDC
@@ -370,7 +454,7 @@ vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs):
 - ⬜ Set text records: capabilities, axl-key, price-per-task
 - ⬜ Wire Orchestrator to resolve real ENS (viem getEnsText) before falling back to local
 
-### 4.5.4 KeeperHub × 0G Chain — Reputation via Cross-Chain Execution (HIGH PRIORITY)
+### 4.5.4 KeeperHub × 0G Chain — Reputation via Cross-Chain Execution (🔴 P0 — UNIQUE CLAIM)
 
 > This is a 2-for-1 sponsor play: proves KeeperHub works on 0G Chain (new feature!) AND makes our reputation system live.
 
@@ -382,24 +466,56 @@ vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs):
 - ⬜ Add to demo script: show the KeeperHub execution log + 0G Chain explorer side by side
 - ⬜ Document in README: "KeeperHub executes on both Base (swaps) and 0G Chain (reputation) — first project to demo cross-chain KeeperHub"
 
-### 4.5.5 Open Marketplace — Dynamic Tool Registration (HIGH PRIORITY)
+### 4.5.5 Open Marketplace — Full Tool Publishing & Discovery Flow (🔴 P0 — #1 DIFFERENTIATOR)
 
-> This is THE differentiator vs SwarmNet/QUORUM/Hydra. They all have hardcoded agent pipelines. We have an OPEN marketplace where anyone can register tools and get discovered + paid.
+> This is THE differentiator vs SwarmNet/QUORUM/Hydra. They all have hardcoded agent pipelines. We have an OPEN MCP Tool Marketplace where anyone can publish tools and get discovered + paid.
 
-**What "open marketplace" means concretely:**
+**Terminology:** We call them **tools** (not skills). Aligns with MCP spec, differentiates from Skillname. We are a **Decentralized MCP Tool Marketplace**.
 
-- A new tool provider can register itself (on-chain + ENS) without changing Orchestrator code
-- Orchestrator discovers tools at runtime by querying the registry, NOT from a hardcoded list
-- Payment rates are set by the tool provider, not by us
+**What "open marketplace" means concretely — the FULL FLOW:**
+
+```
+USER FLOW: Publishing a Tool on AgentMesh
+
+1. TOOL DEVELOPER connects wallet on AgentMesh dashboard
+   → Wallet holds their earnings + is used to pay registration gas
+
+2. TOOL DEVELOPER deploys their MCP service
+   → e.g., `gas-optimizer` — a simple service returning gas predictions
+   → Runs on their own machine, exposes MCP endpoints via AXL
+
+3. TOOL DEVELOPER registers on the marketplace
+   → Calls AgentRegistry.registerTool(name, capabilities, axlKey, price)
+   → Sets ENS text records: capabilities, axl-key, price-per-call
+   → Visible immediately in the Tool Registry UI panel
+
+4. ORCHESTRATOR receives a user task that needs gas optimization
+   → Queries AgentRegistry.getToolsByCapability("gas-prediction")
+   → DISCOVERS the new tool dynamically (wasn't hardcoded!)
+
+5. ORCHESTRATOR calls the new tool via AXL P2P
+   → POST /mcp/{gas_optimizer_key}/predict-gas
+   → Tool returns HTTP 402 (x402 payment required)
+   → Orchestrator pays tool provider's wallet via x402
+   → Tool returns result
+
+6. TOOL DEVELOPER earns USDC
+   → Payment lands in their connected wallet
+   → Visible in dashboard earnings panel
+   → Reputation score incremented on-chain
+```
 
 **Tasks:**
 
-- ⬜ Add `registerTool` CLI/script: takes (name, capabilities, axl-key, price) → writes to AgentRegistry on 0G Chain + sets ENS text records
+- ⬜ Build the `gas-optimizer` MCP tool provider (~20 lines: calls a gas API, returns prediction)
+- ⬜ Boot it on a 5th AXL node (port 9042) with its own ed25519 key
+- ⬜ Create `register-tool.ts` script: takes (name, capabilities, axl-key, price) → writes to AgentRegistry on 0G Chain
 - ⬜ Orchestrator queries AgentRegistry.getToolsByCapability(capability) at runtime — NOT a hardcoded peer list
 - ⬜ Orchestrator reads pricing from registry/ENS and includes it in payment flow
-- ⬜ Demo scenario: show a NEW 5th tool registering mid-session (e.g., `gas-optimizer.agentmesh.eth`) and being discovered by Orchestrator on next task
+- ⬜ Demo scenario: show the 5th tool registering → Orchestrator discovers it on next task → pays it → gets result
 - ⬜ Frontend: "Tool Registry" panel showing all registered tools, their capabilities, prices, and reputation scores
-- ⬜ README section: "How to Register Your Own Tool Provider" — 3-step guide (deploy MCP service, register on-chain, set ENS records)
+- ⬜ Frontend: "Publish Tool" button/flow for the registration process
+- ⬜ README section: "How to Publish Your Own Tool" — 3-step guide (deploy MCP service, register on-chain, start earning)
 
 ### 4.5.6 Tool Provider Architecture — Make It Visible (MEDIUM-HIGH PRIORITY)
 
@@ -426,7 +542,7 @@ vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs):
 - ⬜ Capture rootHash and display in dashboard
 - ⬜ Show the rootHash is verifiable on 0G explorer
 
-### 4.5.8 Deploy Frontend (LOW PRIORITY)
+### 4.5.8 Deploy Frontend (🟡 P2 — All winners have live URLs)
 
 - ⬜ Deploy Next.js dashboard to Vercel
 - ⬜ Configure environment to show demo data even without local backend
@@ -455,6 +571,144 @@ vs **Hydra** (AXL + KeeperHub + 0G Storage/Chain + iNFTs):
 - ⬜ Attempt a real testnet swap via Uniswap Trading API (Sepolia or Base Sepolia if supported)
 - ⬜ If mainnet-only: document in README that quotes are live mainnet data, execution simulated because Uniswap Trading API doesn't support testnets
 - ⬜ Alternative: use KeeperHub's Uniswap plugin to execute a real Sepolia swap (if KeeperHub supports it)
+
+### 4.5.12 FEEDBACK Files for Multiple Sponsors (HIGH PRIORITY — judges love this)
+
+> QUORUM has 3 feedback files. Hydra's KEEPERHUB_FEEDBACK.md resulted in KeeperHub shipping a bug fix in 36h. Scholar Swarm filed 6 items. We only have FEEDBACK.md for Uniswap.
+
+- ⬜ Write **FEEDBACK-GENSYN.md** — document AXL integration friction (Go version issues, GOTOOLCHAIN requirement, node discovery quirks, MCP routing observations)
+- ⬜ Write **FEEDBACK-KEEPERHUB.md** — document KeeperHub integration experience (0G Chain support status, MCP session ergonomics, workflow creation UX, what worked well)
+- ⬜ Both files should follow format: Problem → Reproduction → Suggestion → What Worked Well
+- ⬜ Minimum 3 actionable items per file (not fluff)
+- ⬜ Link these in README under a "Builder Feedback" section
+
+### 4.5.13 Verifiable Artifacts Table in README (HIGH PRIORITY — judges verify claims)
+
+> Scholar Swarm has a clickable verification table. Hydra has "Live attacks captured" with tx links. QUORUM leads with a mainnet tx link. Every claim should link to proof.
+
+- ⬜ Add "Verifiable Artifacts" table to README with clickable links for every claim:
+  - AgentRegistry contract → chainscan.0g.ai link
+  - ReputationTracker contract → chainscan.0g.ai link
+  - 4 agent registrations → tx hashes on explorer
+  - 0G Compute inference → show in logs or link to verified call
+  - AXL topology → screenshot or API response
+  - KeeperHub MCP session → show live tool list
+  - Uniswap quote → show real price data
+  - x402 payment (once real) → tx hash
+  - 0G Storage upload (once real) → rootHash + explorer link
+- ⬜ Format: `| Claim | Evidence | Link |` — single-click verification
+
+### 4.5.14 Honest Known Limitations Section (MEDIUM-HIGH PRIORITY — builds judge trust)
+
+> Scholar Swarm documents 8 limitations. Hydra is transparent about faucet issues. QUORUM has retraction discipline. Judges TRUST projects that acknowledge gaps.
+
+- ⬜ Add "Honest Known Limitations" section to README. Include:
+  1. x402 payments are testnet-only (production would need real USDC float)
+  2. 0G Compute model is limited to qwen-2.5-7b-instruct (production would support model selection)
+  3. Orchestrator is a single point of coordination (v2: replicated orchestrators)
+  4. Tool providers run locally (v2: tool providers can be hosted by anyone, anywhere)
+  5. ENS names are Sepolia-only (mainnet requires real ETH for registration)
+  6. Reputation cold-start (new tools start with 0 reputation — need bootstrap mechanism)
+  7. No MEV protection on the x402 payment layer yet
+  8. AXL nodes must know peer keys upfront (v2: dynamic peer discovery via DHT)
+
+### 4.5.15 AI Usage Documentation (MEDIUM PRIORITY — ETHGlobal requirement)
+
+> ETHGlobal rules: "AI tools allowed but must be documented." Scholar Swarm has full AI_USAGE.md with decision logs. Hydra has AI_USAGE.md. QUORUM attributes per-commit.
+
+- ⬜ Create **AI_USAGE.md** documenting:
+  - Tools used (GitHub Copilot, Claude, etc.)
+  - What AI did: scaffolding, code generation, debugging assistance
+  - What the human did: architecture decisions, sponsor selection, integration debugging, demo design
+  - Rough split: AI accelerated execution, human drove all design decisions
+- ⬜ Keep it honest and brief (1 page max)
+
+### 4.5.16 Demo Script + One-Command Boot (MEDIUM PRIORITY)
+
+> All top competitors have one-command demo scripts. Scholar Swarm: `pnpm spike:18`. Hydra: `./demo/full-demo.sh`. QUORUM: `docker compose up`.
+
+- ⬜ Create `demo.sh` that boots all 4 AXL nodes + all services in correct order
+- ⬜ Add `demo-kill.sh` to cleanly shut down all processes
+- ⬜ Document expected output at each stage (for demo video narration)
+- ⬜ Add timeout guards (if a node doesn't boot in 10s, retry or error clearly)
+
+### 4.5.17 Real KeeperHub Workflow Execution Receipt (HIGH PRIORITY)
+
+> Hydra has 26 real KeeperHub executions. Scholar Swarm has real KeeperHub distribute tx. We claim KeeperHub integration but have no execution receipt to show.
+
+- ⬜ Execute at least ONE real KeeperHub workflow (even simple: `web3/check-balance` on 0G Chain)
+- ⬜ Capture execution ID + result
+- ⬜ Show in dashboard: "KeeperHub Execution: {id} — Status: SUCCESS"
+- ⬜ Add to verifiable artifacts table
+- ⬜ Stretch: execute `web3/write-contract` → ReputationTracker on 0G Chain (combines with 4.5.4)
+
+### 4.5.18 Cross-Network AXL Proof (MEDIUM PRIORITY — if VPS available)
+
+> Scholar Swarm: Turkey laptop ↔ EU VPS. QUORUM: Frankfurt ↔ NYC. Hydra: VPS deployment. Same-machine different-port is weaker proof.
+
+- ⬜ Option A: Use a cheap VPS ($5/month DigitalOcean/Hetzner) to run 1 AXL node remotely
+- ⬜ Option B: Use a friend's machine / phone hotspot (different IP) for 1 node
+- ⬜ Option C: Document in README that "AXL nodes on separate ports is architecturally identical to separate machines — Yggdrasil mesh is IP-agnostic"
+- ⬜ If A or B: capture the cross-IP round-trip evidence (AXL topology showing external peer)
+
+### 4.5.19 Automated Run / Liveness Proof (LOW-MEDIUM PRIORITY)
+
+> Scholar Swarm runs a 6-hour cron auto-bounty. Hydra runs continuously on VPS. Shows the system works unattended.
+
+- ⬜ Create a `cron-demo.sh` or GitHub Action that runs a full task every N hours
+- ⬜ Log results to a `runs/latest.json` file
+- ⬜ If deployed: show that the system ran successfully without human intervention
+- ⬜ Alternative: just run the full pipeline 3+ times and log timestamped results in `docs/run-history/`
+
+### 4.5.20 Wallet Connect + User Wallet Flow (🔴 P0 — MARKETPLACE REQUIRES THIS)
+
+> The marketplace CANNOT work without wallets. Users need a wallet to: (a) pay for tool usage when they submit tasks, (b) earn from tools they published, (c) register tools on-chain. This is the economic backbone.
+
+**Two user personas need wallets:**
+
+| Persona                              | Uses Wallet For                                          | Flow                                                                                       |
+| ------------------------------------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **Task User** (uses the chat)        | Pays for AI tool calls via x402 (deducted per tool used) | Connect wallet → submit goal → Orchestrator calls tools → x402 deducts from user's wallet  |
+| **Tool Publisher** (publishes tools) | Receives earnings + pays registration gas                | Connect wallet → register tool on-chain → earn x402 payments from every call to their tool |
+
+**Tasks:**
+
+- ⬜ Integrate wallet connection in frontend (wagmi + viem + ConnectKit or RainbowKit)
+- ⬜ Support: MetaMask, WalletConnect, Coinbase Wallet (standard connectors)
+- ⬜ On connect: display wallet address, USDC balance (Base Sepolia), and marketplace role
+- ⬜ **For Task Users:** wire connected wallet as the x402 payer — when Orchestrator needs to pay a tool, it signs from the user's connected wallet
+- ⬜ **For Tool Publishers:** wire connected wallet as the earnings recipient — x402 payments settle to this address
+- ⬜ **For Tool Publishers:** wallet pays gas for `AgentRegistry.registerTool()` tx
+- ⬜ Dashboard "My Wallet" panel: show balance, total spent (as user), total earned (as publisher), tx history
+- ⬜ Show per-task cost breakdown: "This task used 3 tools → 0.08 USDC total (Researcher: 0.02, Risk: 0.03, Executor: 0.03)"
+- ⬜ If wallet not connected: show "Connect Wallet to Submit Tasks" prompt (don't allow tasks without wallet)
+- ⬜ For demo: pre-fund a wallet with testnet USDC so the flow works end-to-end
+
+### 4.5.21 Landing Page — Feature Showcase (🟠 P1 — FIRST IMPRESSION)
+
+> Scholar Swarm has scholar-swarm.vercel.app with bounty timelines. Hydra has hydra.hacklabs.in/dashboard. We need a landing page that makes judges IMMEDIATELY understand what AgentMesh is and why it's different.
+
+**The landing page is NOT the dashboard.** It's a marketing/showcase page that loads instantly and explains the product. The dashboard (chat + network graph + payments) is the app itself.
+
+**Sections needed:**
+
+- ⬜ **Hero:** "The Decentralized MCP Tool Marketplace" — one-liner + 15-second animated diagram showing the flow
+- ⬜ **How It Works:** 3-step visual (Publish Tool → Get Discovered → Get Paid)
+- ⬜ **Architecture:** Interactive or static diagram showing 1 Brain + N Tools + AXL mesh + x402 payments
+- ⬜ **Live Stats:** Number of registered tools, total tasks completed, total payments settled (read from on-chain data)
+- ⬜ **Tool Registry:** Live list of all registered tools with capabilities, prices, reputation scores
+- ⬜ **Sponsor Integration:** Visual cards for each sponsor (0G, Gensyn, Uniswap, KeeperHub, ENS) showing what we use
+- ⬜ **"Publish Your Tool" CTA:** Button that links to the registration flow or docs
+- ⬜ **Tech Stack:** Clean grid showing all technologies
+- ⬜ **Footer:** GitHub link, demo video link, team info
+
+**Implementation:**
+
+- ⬜ Build as a separate route (`/`) in the Next.js app — dashboard moves to `/app` or `/dashboard`
+- ⬜ Use Tailwind CSS + Framer Motion for smooth animations
+- ⬜ Must load fast (static, no backend dependency for the landing page itself)
+- ⬜ Deploy to Vercel with the dashboard
+- ⬜ Mobile responsive (judges may check on phone)
 
 ---
 

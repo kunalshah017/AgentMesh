@@ -9,15 +9,27 @@ interface ActivityFeedProps {
 
 function eventColor(type: string): string {
   switch (type) {
-    case "task_created": return "var(--accent)";
+    case "task_created": return "#FF6B6B";
     case "tool_discovered": return "#00aaff";
     case "tool_called": return "#00aaff";
-    case "payment_sent": return "var(--warning)";
+    case "payment_sent": return "#FFD93D";
     case "task_completed":
-    case "task_result": return "var(--accent)";
-    case "error": return "var(--danger)";
-    case "system": return "var(--border-heavy)";
-    default: return "var(--border-heavy)";
+    case "task_result": return "#FF6B6B";
+    case "error": return "#000000";
+    case "system": return "#C4B5FD";
+    default: return "#C4B5FD";
+  }
+}
+
+function eventBg(type: string): string {
+  switch (type) {
+    case "task_created": return "bg-neo-accent/10";
+    case "tool_called": return "bg-[#00aaff10]";
+    case "payment_sent": return "bg-neo-secondary/20";
+    case "task_completed":
+    case "task_result": return "bg-neo-accent/10";
+    case "error": return "bg-black/5";
+    default: return "";
   }
 }
 
@@ -44,35 +56,39 @@ export function ActivityFeed({ events }: ActivityFeedProps) {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="px-4 py-3 border-b-3 border-[var(--fg)] bg-[var(--surface)] flex items-center justify-between">
-        <h2 className="text-sm font-black uppercase tracking-wider">
+      {/* Header */}
+      <div className="px-4 py-3 border-b-4 border-black bg-neo-muted flex items-center justify-between">
+        <h2 className="text-sm font-black uppercase tracking-wider text-black">
           ACTIVITY LOG
         </h2>
-        <span className="mono text-xs text-[var(--border-heavy)]">{events.length} events</span>
+        <span className="bg-black text-neo-white px-2 py-0.5 text-[10px] font-black mono">
+          {events.length} EVT
+        </span>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-1">
+      {/* Events */}
+      <div className="flex-1 overflow-y-auto p-3 space-y-1 bg-neo-bg">
         {events.length === 0 ? (
-          <p className="mono text-xs text-[var(--border-heavy)]">
+          <p className="mono text-xs font-bold text-black/40 p-4">
             Waiting for agent activity...
           </p>
         ) : (
           events.map((event, i) => (
             <div
               key={i}
-              className="flex items-start gap-3 mono text-xs py-1"
-              style={{ borderLeft: `3px solid ${eventColor(event.type)}`, paddingLeft: "8px" }}
+              className={`flex items-start gap-3 mono text-xs py-1.5 px-2 border-l-4 ${eventBg(event.type)}`}
+              style={{ borderLeftColor: eventColor(event.type) }}
             >
-              <span className="text-[var(--border-heavy)] shrink-0 w-[70px]">
+              <span className="text-black/40 shrink-0 w-[65px] font-bold">
                 {new Date((event._ts as number) ?? Date.now()).toLocaleTimeString()}
               </span>
               <span
-                className="font-bold uppercase shrink-0 w-[110px]"
+                className="font-black uppercase shrink-0 w-[100px]"
                 style={{ color: eventColor(event.type) }}
               >
                 {event.type.replace(/_/g, " ")}
               </span>
-              <span className="text-[var(--fg)] truncate">
+              <span className="text-black font-bold truncate">
                 {eventSummary(event)}
               </span>
             </div>

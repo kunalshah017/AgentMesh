@@ -1,18 +1,19 @@
 @import "tailwindcss";
 
-:root {
-  --bg: #0a0a0a;
-  --fg: #ededed;
-  --accent: #00ff41;
-  --accent-dim: #00cc33;
-  --danger: #ff3333;
-  --warning: #ffcc00;
-  --border: #333;
-  --border-heavy: #555;
-  --surface: #111;
-  --surface-raised: #1a1a1a;
-  --mono: "JetBrains Mono", "Fira Code", "SF Mono", Consolas, monospace;
-  --sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+@theme {
+  --color-neo-bg: #fffdf5;
+  --color-neo-fg: #000000;
+  --color-neo-accent: #ff6b6b;
+  --color-neo-secondary: #ffd93d;
+  --color-neo-muted: #c4b5fd;
+  --color-neo-white: #ffffff;
+
+  --font-family-display: "Space Grotesk", sans-serif;
+  --font-family-mono: "JetBrains Mono", "Fira Code", monospace;
+
+  --shadow-neo-sm: 4px 4px 0px 0px #000;
+  --shadow-neo-md: 8px 8px 0px 0px #000;
+  --shadow-neo-lg: 12px 12px 0px 0px #000;
 }
 
 * {
@@ -20,62 +21,138 @@
 }
 
 body {
-  background: var(--bg);
-  color: var(--fg);
-  font-family: var(--sans);
+  background: var(--color-neo-bg);
+  color: var(--color-neo-fg);
+  font-family: var(--font-family-display);
+  font-weight: 700;
   margin: 0;
   padding: 0;
-  -webkit-font-smoothing: antialiased;
 }
 
-/* --- Brutalist Utilities --- */
-.border-brutal {
-  border: 3px solid var(--fg);
+/* --- Neo-Brutalist Patterns --- */
+.pattern-halftone {
+  background-image: radial-gradient(#000 1.5px, transparent 1.5px);
+  background-size: 20px 20px;
 }
 
-.border-brutal-accent {
-  border: 3px solid var(--accent);
+.pattern-grid {
+  background-size: 40px 40px;
+  background-image:
+    linear-gradient(to right, rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
+}
+
+.pattern-dots {
+  background-image: radial-gradient(circle, #000 1px, transparent 1.5px);
+  background-size: 24px 24px;
+}
+
+/* --- Core Neo-Brutalist Classes --- */
+.neo-card {
+  background: var(--color-neo-white);
+  border: 4px solid #000;
+  box-shadow: 8px 8px 0px 0px #000;
+}
+
+.neo-card-sm {
+  background: var(--color-neo-white);
+  border: 4px solid #000;
+  box-shadow: 4px 4px 0px 0px #000;
+}
+
+.neo-btn {
+  border: 4px solid #000;
+  box-shadow: 4px 4px 0px 0px #000;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition:
+    transform 100ms ease-out,
+    box-shadow 100ms ease-out;
+}
+
+.neo-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+.neo-input {
+  border: 4px solid #000;
+  background: var(--color-neo-white);
+  font-weight: 700;
+  font-family: var(--font-family-mono);
+  outline: none;
+}
+
+.neo-input:focus {
+  background: var(--color-neo-secondary);
+  box-shadow: 4px 4px 0px 0px #000;
 }
 
 .mono {
-  font-family: var(--mono);
-}
-
-.text-accent {
-  color: var(--accent);
-}
-
-.bg-surface {
-  background: var(--surface);
-}
-
-.bg-surface-raised {
-  background: var(--surface-raised);
+  font-family: var(--font-family-mono);
 }
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg);
+  background: var(--color-neo-bg);
+  border-left: 4px solid #000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border: 1px solid var(--bg);
+  background: #000;
 }
 
 /* Status indicators */
 .status-dot {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
   display: inline-block;
+  border: 2px solid #000;
 }
 
 .status-dot.active {
-  background: var(--accent);
+  background: var(--color-neo-accent);
+}
+
+.status-dot.warning {
+  background: var(--color-neo-secondary);
+}
+
+.status-dot.error {
+  background: #000;
+}
+
+/* Text stroke for display */
+.text-stroke {
+  -webkit-text-stroke: 2px black;
+  color: transparent;
+}
+
+/* Spin slow animation */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 10s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin-slow,
+  .animate-bounce,
+  .animate-pulse {
+    animation: none;
+  }
 }
 
 .status-dot.warning {
@@ -88,8 +165,13 @@ body {
 
 /* Pulse animation for active nodes */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 4px var(--accent); }
-  50% { box-shadow: 0 0 16px var(--accent); }
+  0%,
+  100% {
+    box-shadow: 0 0 4px var(--accent);
+  }
+  50% {
+    box-shadow: 0 0 16px var(--accent);
+  }
 }
 
 .pulse-active {

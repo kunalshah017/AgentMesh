@@ -181,12 +181,12 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
 
   const eventTypeStyle = (eventType?: string) => {
     switch (eventType) {
-      case "tool": return "border-l-4 border-[#00aaff] pl-3";
-      case "payment": return "border-l-4 border-[var(--warning)] pl-3";
-      case "success": return "border-l-4 border-[var(--accent)] pl-3";
-      case "error": return "border-l-4 border-[var(--danger)] pl-3";
-      case "done": return "text-center text-[var(--border-heavy)]";
-      case "task": return "border-l-4 border-[var(--accent)] pl-3 text-[var(--accent)]";
+      case "tool": return "border-l-4 border-[#00aaff] pl-3 bg-[#00aaff10]";
+      case "payment": return "border-l-4 border-neo-secondary pl-3 bg-[#FFD93D20]";
+      case "success": return "border-l-4 border-neo-accent pl-3 bg-[#FF6B6B10]";
+      case "error": return "border-l-4 border-black pl-3 bg-[#00000010]";
+      case "done": return "text-center font-black";
+      case "task": return "border-l-4 border-neo-accent pl-3 bg-neo-accent/10 font-bold";
       default: return "";
     }
   };
@@ -194,37 +194,37 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
   return (
     <div className="flex flex-col h-full">
       {/* Title bar */}
-      <div className="px-4 py-3 border-b-3 border-[var(--fg)] bg-[var(--surface)] flex items-center justify-between">
-        <h2 className="text-sm font-black uppercase tracking-wider">
+      <div className="px-4 py-3 border-b-4 border-black bg-neo-accent flex items-center justify-between">
+        <h2 className="text-sm font-black uppercase tracking-wider text-black">
           COMMAND INTERFACE
         </h2>
-        <div className="flex items-center gap-2 mono text-xs">
+        <div className="flex items-center gap-2">
           <span className={`status-dot ${status === "connected" ? "active" : status === "connecting" ? "warning" : "error"}`} />
-          <span className="text-[var(--border-heavy)] uppercase">{status}</span>
+          <span className="text-xs font-black uppercase text-black">{status}</span>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-3">
+      <div className="flex-1 overflow-y-auto p-4 space-y-3 bg-neo-bg pattern-dots">
         {messages.map((msg, i) => (
           <div
             key={i}
             className={`${msg.role === "user"
-              ? "border-brutal-accent bg-[var(--surface)] p-3"
+              ? "neo-card-sm bg-neo-secondary p-3"
               : msg.role === "system"
-                ? "border-l-4 border-[var(--border)] pl-3 text-[var(--border-heavy)] text-sm"
-                : `bg-[var(--surface-raised)] p-3 ${eventTypeStyle(msg.eventType)}`
+                ? "border-l-4 border-black pl-3 text-black/50 text-sm"
+                : `neo-card-sm p-3 ${eventTypeStyle(msg.eventType)}`
               }`}
           >
-            <div className="mono text-xs text-[var(--border-heavy)] mb-1 uppercase">
-              {msg.role === "user" ? "YOU" : msg.role === "system" ? "SYS" : "MESH"}
+            <div className="mono text-[10px] font-black mb-1 uppercase tracking-widest opacity-60">
+              {msg.role === "user" ? "YOU" : msg.role === "system" ? "SYSTEM" : "MESH"}
             </div>
-            <pre className="mono text-sm whitespace-pre-wrap break-words">{msg.content}</pre>
+            <pre className="mono text-sm whitespace-pre-wrap break-words font-bold">{msg.content}</pre>
           </div>
         ))}
         {loading && (
-          <div className="border-brutal p-3 bg-[var(--surface)]">
-            <div className="mono text-xs text-[var(--accent)] uppercase animate-pulse">
+          <div className="neo-card-sm bg-neo-muted p-3 animate-pulse">
+            <div className="mono text-xs font-black uppercase tracking-widest">
               ▓▓▓ ORCHESTRATING...
             </div>
           </div>
@@ -233,7 +233,7 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
       </div>
 
       {/* Input */}
-      <div className="border-t-3 border-[var(--fg)] p-4 bg-[var(--surface)]">
+      <div className="border-t-4 border-black p-4 bg-neo-white">
         <div className="flex gap-0">
           <input
             type="text"
@@ -241,13 +241,13 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && sendGoal()}
             placeholder="Enter goal: Find me the best yield for 10 ETH..."
-            className="flex-1 bg-[var(--bg)] border-3 border-[var(--fg)] border-r-0 px-4 py-3 mono text-sm text-[var(--fg)] placeholder:text-[var(--border)] outline-none focus:border-[var(--accent)]"
+            className="neo-input flex-1 px-4 py-3 text-sm border-r-0"
             disabled={loading}
           />
           <button
             onClick={sendGoal}
             disabled={loading || !input.trim()}
-            className="bg-[var(--fg)] text-[var(--bg)] px-6 py-3 font-black uppercase text-sm tracking-wider border-3 border-[var(--fg)] hover:bg-[var(--accent)] hover:border-[var(--accent)] transition-colors disabled:opacity-30"
+            className="neo-btn bg-neo-accent text-black px-6 py-3 text-sm disabled:opacity-30"
           >
             SEND
           </button>
