@@ -32,6 +32,8 @@ class ChatStore {
   private loadedWallets = new Set<string>();
   // Track in-progress loads to avoid duplicate fetches
   private loadingWallets = new Map<string, Promise<void>>();
+  // Debounce timers for chat persistence
+  private persistTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
   /** Get or create a map of chats for a wallet */
   private getUserChats(walletAddress: string): Map<string, Chat> {
@@ -207,7 +209,7 @@ class ChatStore {
     return this.getUserChats(walletAddress).get(chatId);
   }
 
-  /** Add a message to a chat and persist to 0G */
+  /** Add a message to a chat and persist to 0G (debounced) */
   addMessage(
     walletAddress: string,
     chatId: string,
@@ -230,8 +232,18 @@ class ChatStore {
     chat.messages.push(message);
     chat.updatedAt = Date.now();
 
-    // Persist updated chat to 0G (debounced by nature of async)
-    this.persistTo0G(chat);
+    // Debounce: only persist after 2s of no new messages
+    const timerKey = `${walletAddress}/${chatId}`;
+    const existing = this.persistTimers.get(timerKey);
+    if (existing) clearTimeout(existing);
+    this.persistTimers.set(
+      timerKey,
+      setTimeout(() => {
+        this.persistTimers.delete(timerKey);
+        this.persistTo0G(chat);
+      }, 2000),
+    );
+
     return message;
   }
 

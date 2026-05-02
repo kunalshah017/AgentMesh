@@ -20,6 +20,33 @@ const STREAM_ID =
   process.env.ZG_STREAM_ID ??
   "0x35dd3e73dd3d8474f286fb6f5af5a1e953662d2d5d176994520390e14bad083d";
 
+// Serialize all KV writes to avoid nonce conflicts on the 0G chain
+const writeQueue: Array<() => Promise<void>> = [];
+let writeInProgress = false;
+
+async function drainWriteQueue(): Promise<void> {
+  if (writeInProgress) return;
+  writeInProgress = true;
+  while (writeQueue.length > 0) {
+    const task = writeQueue.shift()!;
+    await task();
+  }
+  writeInProgress = false;
+}
+
+function enqueueWrite<T>(fn: () => Promise<T>): Promise<T> {
+  return new Promise<T>((resolve, reject) => {
+    writeQueue.push(async () => {
+      try {
+        resolve(await fn());
+      } catch (e) {
+        reject(e);
+      }
+    });
+    drainWriteQueue();
+  });
+}
+
 /**
  * Upload JSON data to 0G KV Storage and return the root hash / reference.
  * Uses the 0G SDK Batcher for writes and KvClient for reads.
@@ -47,57 +74,60 @@ export async function uploadToStorage(
     return contentHash;
   }
 
-  try {
-    const provider = new ethers.JsonRpcProvider(rpcUrl ?? ZERO_G.chainRpc);
-    const signer = new ethers.Wallet(pk, provider);
-    const indexer = new Indexer(indexerUrl ?? INDEXER_RPC);
+  // Serialize writes through queue to prevent nonce conflicts
+  return enqueueWrite(async () => {
+    try {
+      const provider = new ethers.JsonRpcProvider(rpcUrl ?? ZERO_G.chainRpc);
+      const signer = new ethers.Wallet(pk, provider);
+      const indexer = new Indexer(indexerUrl ?? INDEXER_RPC);
 
-    // Select storage nodes
-    const [nodes, selectError] = await indexer.selectNodes(1);
-    if (selectError !== null) {
-      throw new Error(`Node selection failed: ${selectError.message}`);
+      // Select storage nodes
+      const [nodes, selectError] = await indexer.selectNodes(1);
+      if (selectError !== null) {
+        throw new Error(`Node selection failed: ${selectError.message}`);
+      }
+
+      // Get flow contract from storage node
+      const status = await nodes[0]?.getStatus();
+      const flowAddress = status?.networkIdentity?.flowAddress;
+      if (!flowAddress) {
+        throw new Error("Storage node did not return flow contract address");
+      }
+
+      const flow = getFlowContract(flowAddress, signer as any);
+      const batcher = new Batcher(1, nodes, flow, rpcUrl ?? ZERO_G.chainRpc);
+
+      // Set KV entry: stream → key → value
+      batcher.streamDataBuilder.set(STREAM_ID, Buffer.from(key, "utf8"), bytes);
+
+      // Execute the write
+      const [result, uploadError] = await batcher.exec({
+        finalityRequired: false,
+        expectedReplica: 1,
+      });
+
+      if (uploadError !== null) {
+        throw new Error(`KV write failed: ${uploadError.message}`);
+      }
+
+      const rootHash = result.rootHash;
+      const txHash = result.txHash;
+      console.log(
+        `  📦 [0G Storage] Written to KV — key=${key} rootHash=${rootHash?.slice(0, 18)}... txHash=${txHash?.slice(0, 18)}...`,
+      );
+
+      return rootHash ?? contentHash;
+    } catch (error) {
+      // Fallback to content-addressed hash
+      console.log(
+        `  ⚠️ [0G Storage] KV write failed (${error}), using content hash: ${contentHash.slice(0, 18)}...`,
+      );
+      return contentHash;
     }
-
-    // Get flow contract from storage node
-    const status = await nodes[0]?.getStatus();
-    const flowAddress = status?.networkIdentity?.flowAddress;
-    if (!flowAddress) {
-      throw new Error("Storage node did not return flow contract address");
-    }
-
-    const flow = getFlowContract(flowAddress, signer as any);
-    const batcher = new Batcher(1, nodes, flow, rpcUrl ?? ZERO_G.chainRpc);
-
-    // Set KV entry: stream → key → value
-    batcher.streamDataBuilder.set(STREAM_ID, Buffer.from(key, "utf8"), bytes);
-
-    // Execute the write
-    const [result, uploadError] = await batcher.exec({
-      finalityRequired: false,
-      expectedReplica: 1,
-    });
-
-    if (uploadError !== null) {
-      throw new Error(`KV write failed: ${uploadError.message}`);
-    }
-
-    const rootHash = result.rootHash;
-    const txHash = result.txHash;
-    console.log(
-      `  📦 [0G Storage] Written to KV — key=${key} rootHash=${rootHash?.slice(0, 18)}... txHash=${txHash?.slice(0, 18)}...`,
-    );
-
-    return rootHash ?? contentHash;
-  } catch (error) {
-    // Fallback to content-addressed hash
-    console.log(
-      `  ⚠️ [0G Storage] KV write failed (${error}), using content hash: ${contentHash.slice(0, 18)}...`,
-    );
-    return contentHash;
-  }
+  });
 }
 
-/**
+/** 
  * Download JSON data from 0G KV Storage by key.
  */
 export async function downloadFromStorage(
