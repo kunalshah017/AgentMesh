@@ -1,16 +1,18 @@
 import { parseAbi } from "viem";
 
 export const REGISTRY_ADDRESS =
-  "0x0B05236c972DbFCe91519a183980F0D5fFd9da28" as const;
+  "0x632B1282B766fb811b3570274A86A4E83838cbDd" as const;
 export const REPUTATION_ADDRESS =
-  "0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4" as const;
+  "0xf59Bf05D823b01F8E65a1AfFf718Fe5437D2DA10" as const;
 
 export const REGISTRY_ABI = parseAbi([
   "function getAgentCount() external view returns (uint256)",
   "function getAllAgentIds() external view returns (bytes32[])",
-  "function getAgent(bytes32 id) external view returns (address owner, string ensName, string axlPeerKey, string[] capabilities, uint256 pricePerCall, uint256 registeredAt, bool active)",
+  "function getAgent(bytes32 id) external view returns (address owner, string ensName, string endpoint, string[] categories, uint256 registeredAt, bool active)",
   "function getCapabilities(bytes32 id) external view returns (string[])",
-  "function registerAgent(string ensName, string axlPeerKey, string[] capabilities, uint256 pricePerCall) external returns (bytes32)",
+  "function registerAgent(string ensName, string endpoint, string[] categories) external returns (bytes32)",
+  "function updateEndpoint(bytes32 id, string endpoint) external",
+  "function updateCategories(bytes32 id, string[] categories) external",
 ]);
 
 export const REPUTATION_ABI = parseAbi([

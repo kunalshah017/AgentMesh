@@ -1,18 +1,25 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useAccount, useConnect } from "wagmi";
+import { WalletDropdown } from "./WalletDropdown";
 
 interface NavbarProps {
     /** Optional status indicator for dashboard */
-    status?: "connected" | "connecting" | "disconnected" | "demo";
+    status?: "connected" | "connecting" | "disconnected";
     /** Optional event count badge */
     eventCount?: number;
 }
 
 export function Navbar({ status, eventCount }: NavbarProps) {
     const pathname = usePathname();
+    const { isConnected } = useAccount();
+    const { connect, connectors } = useConnect();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => { setMounted(true); }, []);
 
     const links = [
         { href: "/", label: "Home" },
@@ -52,12 +59,12 @@ export function Navbar({ status, eventCount }: NavbarProps) {
             <div className="flex items-center gap-3">
                 {/* Connection status (dashboard only) */}
                 {status && (
-                    <div className={`border-3 border-black px-3 py-1.5 flex items-center gap-2 ${status === "connected" || status === "demo" ? "bg-neo-secondary" : status === "connecting" ? "bg-neo-muted" : "bg-neo-white"
+                    <div className={`border-3 border-black px-3 py-1.5 flex items-center gap-2 ${status === "connected" ? "bg-neo-secondary" : status === "connecting" ? "bg-neo-muted" : "bg-neo-white"
                         }`}>
-                        <span className={`w-2 h-2 rounded-full ${status === "connected" || status === "demo" ? "bg-green-500" : status === "connecting" ? "bg-yellow-400" : "bg-red-500"
+                        <span className={`w-2 h-2 rounded-full ${status === "connected" ? "bg-green-500" : status === "connecting" ? "bg-yellow-400" : "bg-red-500"
                             }`} />
                         <span className="mono text-xs font-black uppercase">
-                            {status === "connected" ? "LIVE" : status === "demo" ? "DEMO" : status === "connecting" ? "..." : "OFF"}
+                            {status === "connected" ? "LIVE" : status === "connecting" ? "..." : "OFF"}
                         </span>
                     </div>
                 )}
@@ -70,25 +77,20 @@ export function Navbar({ status, eventCount }: NavbarProps) {
                 )}
 
                 {/* Wallet */}
-                <ConnectButton.Custom>
-                    {({ account, chain, openConnectModal, mounted }) => {
-                        if (!mounted || !account || !chain) {
-                            return (
-                                <button
-                                    onClick={openConnectModal}
-                                    className="bg-neo-secondary border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-                                >
-                                    Connect Wallet
-                                </button>
-                            );
-                        }
-                        return (
-                            <div className="bg-green-200 border-4 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000]">
-                                {account.displayName}
-                            </div>
-                        );
-                    }}
-                </ConnectButton.Custom>
+                {!mounted ? (
+                    <div className="bg-neo-secondary border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] opacity-50">
+                        Connect Wallet
+                    </div>
+                ) : isConnected ? (
+                    <WalletDropdown />
+                ) : (
+                    <button
+                        onClick={() => connect({ connector: connectors[0] })}
+                        className="bg-neo-secondary border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                    >
+                        Connect Wallet
+                    </button>
+                )}
             </div>
         </nav>
     );
