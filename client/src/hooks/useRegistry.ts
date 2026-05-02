@@ -9,13 +9,12 @@ import {
   ZG_CHAIN_ID,
 } from "@/config/contracts";
 
-export interface OnChainAgent {
+export interface OnChainProvider {
   id: `0x${string}`;
   owner: string;
   ensName: string;
-  axlPeerKey: string;
-  capabilities: string[];
-  pricePerCall: bigint;
+  endpoint: string;     // MCP server endpoint URL
+  categories: string[]; // Provider categories for discovery
   registeredAt: bigint;
   active: boolean;
   reputation?: {
@@ -68,7 +67,7 @@ export function useAgentReputation(agentId: `0x${string}` | undefined) {
   });
 }
 
-export function useRegistryAgents() {
+export function useRegistryProviders() {
   const { data: agentIds, isLoading: idsLoading } = useAllAgentIds();
 
   const agentCalls = (agentIds ?? []).map((id) => ({
@@ -97,7 +96,7 @@ export function useRegistryAgents() {
     query: { enabled: !!agentIds && agentIds.length > 0 },
   });
 
-  const agents: OnChainAgent[] = [];
+  const providers: OnChainProvider[] = [];
 
   if (agentIds && agentResults) {
     for (let i = 0; i < agentIds.length; i++) {
@@ -107,9 +106,8 @@ export function useRegistryAgents() {
       const [
         owner,
         ensName,
-        axlPeerKey,
-        capabilities,
-        pricePerCall,
+        endpoint,
+        categories,
         registeredAt,
         active,
       ] = agentResult.result as [
@@ -118,13 +116,12 @@ export function useRegistryAgents() {
         string,
         string[],
         bigint,
-        bigint,
         boolean,
       ];
 
       if (!active) continue;
 
-      let reputation: OnChainAgent["reputation"];
+      let reputation: OnChainProvider["reputation"];
       if (repResults?.[i]?.status === "success") {
         const [
           tasksCompleted,
@@ -146,13 +143,12 @@ export function useRegistryAgents() {
         };
       }
 
-      agents.push({
+      providers.push({
         id: agentIds[i],
         owner,
         ensName,
-        axlPeerKey,
-        capabilities,
-        pricePerCall,
+        endpoint,
+        categories,
         registeredAt,
         active,
         reputation,
@@ -161,7 +157,7 @@ export function useRegistryAgents() {
   }
 
   return {
-    agents,
+    providers,
     isLoading: idsLoading || agentsLoading || repLoading,
   };
 }

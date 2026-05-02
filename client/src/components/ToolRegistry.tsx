@@ -1,202 +1,155 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
-interface RegisteredTool {
-    ensName: string;
-    capabilities: string[];
-    pricePerCall: string;
-    isActive: boolean;
-    reputation?: {
-        tasksCompleted: number;
-        successRate: number;
-        txHash?: string;
-    };
-}
-
-// On-chain registry data (fetched from orchestrator API or fallback to known state)
-const FALLBACK_REGISTRY: RegisteredTool[] = [
-    { ensName: "orchestrator.agent-mesh.eth", capabilities: ["task-planning", "tool-discovery", "orchestration"], pricePerCall: "0", isActive: true },
-    { ensName: "researcher.agent-mesh.eth", capabilities: ["defi-research", "scan-yields", "token-info", "protocol-stats"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3" } },
-    { ensName: "analyst.agent-mesh.eth", capabilities: ["risk-analysis", "risk-assess", "contract-audit"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xcd21f6d0d04e2c4367efa5391b5e0a7d950aade4e47f0661765b94ec6298dbac" } },
-    { ensName: "executor.agent-mesh.eth", capabilities: ["execution", "execute-swap", "execute-deposit", "check-balance"], pricePerCall: "0.02", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd" } },
-    { ensName: "gas-optimizer.agent-mesh.eth", capabilities: ["gas-prediction", "fee-estimation"], pricePerCall: "0.005", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea6d5e57dea6dc055e3a74192fa8e6210fd9eb65226140e60939cf18e972b13e" } },
-];
+import { useCatalog, type CatalogProvider } from "@/hooks/useCatalog";
 
 const ROLE_ICONS: Record<string, string> = {
-    "orchestrator": "🧠",
+    "agentmesh": "🧠",
     "researcher": "🔍",
     "analyst": "⚠️",
     "executor": "🔧",
     "gas-optimizer": "⛽",
+    "risk analyst": "⚠️",
+    "gas optimizer": "⛽",
 };
 
 const ROLE_COLORS: Record<string, string> = {
-    "orchestrator": "bg-red-100 border-red-400",
+    "agentmesh": "bg-indigo-100 border-indigo-400",
     "researcher": "bg-blue-100 border-blue-400",
     "analyst": "bg-yellow-100 border-yellow-400",
     "executor": "bg-purple-100 border-purple-400",
     "gas-optimizer": "bg-green-100 border-green-400",
+    "risk analyst": "bg-yellow-100 border-yellow-400",
+    "gas optimizer": "bg-green-100 border-green-400",
+};
+
+const STATUS_DOT: Record<string, string> = {
+    online: "bg-green-500",
+    offline: "bg-gray-400",
+    degraded: "bg-yellow-500",
 };
 
 export function ToolRegistry() {
-    const [tools, setTools] = useState<RegisteredTool[]>(FALLBACK_REGISTRY);
-    const [loading, setLoading] = useState(false);
-
-    // Try to fetch live registry from orchestrator API (only when backend URL is configured)
-    useEffect(() => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL;
-        // Skip if no API URL set, or if we're on a deployed domain hitting localhost
-        if (!API_URL && typeof window !== "undefined" && window.location.hostname !== "localhost") return;
-        const url = API_URL ?? "http://localhost:3001";
-        setLoading(true);
-        fetch(`${url}/registry`)
-            .then((r) => r.json())
-            .then((data) => {
-                if (Array.isArray(data) && data.length > 0) {
-                    setTools(data);
-                }
-            })
-            .catch(() => {
-                // Use fallback — orchestrator may not be running
-            })
-            .finally(() => setLoading(false));
-    }, []);
-
-    const getName = (ensName: string) => ensName.split(".")[0];
+    const { providers, tools, isLoading } = useCatalog();
 
     return (
         <div className="flex flex-col h-full">
             {/* Header */}
             <div className="px-4 py-3 border-b-4 border-black bg-neo-white flex items-center justify-between shrink-0">
                 <h2 className="text-sm font-black uppercase tracking-wider">
-                    TOOL REGISTRY
-                    <span className="ml-2 bg-green-400 border-2 border-black px-2 py-0.5 text-[10px] font-black">ON-CHAIN</span>
+                    MCP PROVIDERS
+                    <span className="ml-2 bg-green-400 border-2 border-black px-2 py-0.5 text-[10px] font-black">LIVE</span>
                 </h2>
                 <div className="flex items-center gap-2">
                     <span className="mono text-xs font-black">{tools.length} TOOLS</span>
-                    {loading && <span className="text-[10px] animate-pulse">SYNCING...</span>}
+                    {isLoading && <span className="text-[10px] animate-pulse">SYNCING...</span>}
                 </div>
             </div>
 
             {/* Registry info bar */}
             <div className="px-4 py-2 bg-neo-muted border-b-2 border-black text-[10px] font-bold uppercase tracking-wider flex items-center justify-between">
                 <span>AgentRegistry • 0G Chain Testnet</span>
-                <span className="mono opacity-60">0x0B05...da28</span>
+                <span className="mono opacity-60">0x632B...cbDd</span>
             </div>
 
             {/* Architecture indicator */}
             <div className="px-4 py-2 border-b-2 border-black bg-neo-bg flex items-center gap-3">
                 <div className="flex items-center gap-1">
-                    <span className="text-sm">🧠</span>
-                    <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5">1 Brain</span>
-                    <span className="text-[9px] opacity-50 ml-1">0G Compute</span>
+                    <span className="text-sm">📦</span>
+                    <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5">{providers.length} Providers</span>
                 </div>
-                <span className="text-[9px] font-black">+</span>
+                <span className="text-[9px] font-black">→</span>
                 <div className="flex items-center gap-1">
-                    <span className="text-sm">🔧</span>
-                    <span className="text-[9px] font-black uppercase bg-neo-white border border-black px-1.5 py-0.5">{tools.length - 1} Tools</span>
-                    <span className="text-[9px] opacity-50 ml-1">No LLM</span>
+                    <span className="text-sm">⚡</span>
+                    <span className="text-[9px] font-black uppercase bg-neo-white border border-black px-1.5 py-0.5">{tools.length} Tools</span>
+                    <span className="text-[9px] opacity-50 ml-1">x402</span>
                 </div>
             </div>
 
-            {/* Tool list */}
+            {/* Provider list */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {tools.map((tool) => {
-                    const name = getName(tool.ensName);
-                    const icon = ROLE_ICONS[name] ?? "📦";
-                    const colorClass = ROLE_COLORS[name] ?? "bg-gray-100 border-gray-400";
-                    const isOrchestrator = name === "orchestrator";
-
-                    return (
-                        <div
-                            key={tool.ensName}
-                            className={`border-3 border-black p-3 shadow-[3px_3px_0px_0px_#000] ${colorClass}`}
-                        >
-                            <div className="flex items-start justify-between">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-lg">{icon}</span>
-                                    <div>
-                                        <div className="flex items-center gap-2">
-                                            <span className="font-black text-sm uppercase">{name}</span>
-                                            {isOrchestrator && (
-                                                <span className="bg-black text-white px-1.5 py-0.5 text-[9px] font-black">BRAIN</span>
-                                            )}
-                                            {!isOrchestrator && (
-                                                <span className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-black">TOOL</span>
-                                            )}
-                                        </div>
-                                        <div className="mono text-[10px] opacity-60 mt-0.5">{tool.ensName}</div>
-                                    </div>
-                                </div>
-
-                                {/* Status + Price */}
-                                <div className="text-right">
-                                    <div className="flex items-center gap-1">
-                                        <span className={`w-2 h-2 rounded-full ${tool.isActive ? "bg-green-500" : "bg-gray-400"}`} />
-                                        <span className="text-[10px] font-bold uppercase">
-                                            {tool.isActive ? "LIVE" : "OFF"}
-                                        </span>
-                                    </div>
-                                    {!isOrchestrator && (
-                                        <div className="mono text-[10px] font-bold mt-1">
-                                            {Number(tool.pricePerCall) > 0 ? `${tool.pricePerCall} USDC` : "FREE"}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Capabilities */}
-                            <div className="flex flex-wrap gap-1 mt-2">
-                                {tool.capabilities.map((cap) => (
-                                    <span
-                                        key={cap}
-                                        className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase"
-                                    >
-                                        {cap}
-                                    </span>
-                                ))}
-                            </div>
-
-                            {/* Reputation */}
-                            {tool.reputation && (
-                                <div className="mt-2 pt-2 border-t border-black/20 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-[9px] font-black uppercase">
-                                            ✅ {tool.reputation.tasksCompleted} task{tool.reputation.tasksCompleted !== 1 ? "s" : ""}
-                                        </span>
-                                        <span className="text-[9px] font-bold text-green-700">
-                                            {tool.reputation.successRate}% success
-                                        </span>
-                                    </div>
-                                    {tool.reputation.txHash && (
-                                        <a
-                                            href={`https://chainscan-newton.0g.ai/tx/${tool.reputation.txHash}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-[9px] font-bold text-blue-600 hover:underline"
-                                        >
-                                            TX ↗
-                                        </a>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    );
-                })}
+                {providers.map((provider) => (
+                    <ProviderRow key={provider.ensName} provider={provider} />
+                ))}
             </div>
 
-            {/* Footer — marketplace CTA */}
+            {/* Footer */}
             <div className="px-4 py-3 border-t-4 border-black bg-neo-white shrink-0">
                 <div className="text-center">
                     <div className="text-[10px] font-bold uppercase tracking-wider opacity-60">
-                        Open Marketplace — Anyone Can Register
+                        Open MCP Marketplace — Anyone Can Publish
                     </div>
                     <div className="mono text-[9px] mt-1 opacity-40">
-                        Deploy MCP service → Register on-chain → Get discovered → Earn USDC
+                        Deploy MCP Server → Register on-chain → Tools auto-discovered → Earn via x402
                     </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function ProviderRow({ provider }: { provider: CatalogProvider }) {
+    const nameKey = provider.name.toLowerCase();
+    const icon = ROLE_ICONS[nameKey] ?? "📦";
+    const colorClass = ROLE_COLORS[nameKey] ?? "bg-gray-100 border-gray-400";
+    const statusDot = STATUS_DOT[provider.status] ?? STATUS_DOT.offline;
+
+    return (
+        <div className={`border-3 border-black p-3 shadow-[3px_3px_0px_0px_#000] ${colorClass}`}>
+            <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                    <span className="text-lg">{icon}</span>
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <span className="font-black text-sm uppercase">{provider.name}</span>
+                        </div>
+                        <div className="mono text-[10px] opacity-60 mt-0.5">{provider.ensName}</div>
+                    </div>
+                </div>
+
+                {/* Status + Tool count */}
+                <div className="text-right">
+                    <div className="flex items-center gap-1">
+                        <span className={`w-2 h-2 rounded-full ${statusDot}`} />
+                        <span className="text-[10px] font-bold uppercase">
+                            {provider.status}
+                        </span>
+                    </div>
+                    <div className="mono text-[10px] font-bold mt-1">
+                        {provider.tools.length} tool{provider.tools.length !== 1 ? "s" : ""}
+                    </div>
+                </div>
+            </div>
+
+            {/* Tools preview */}
+            {provider.tools.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                    {provider.tools.map((tool) => (
+                        <span
+                            key={tool.name}
+                            className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold"
+                        >
+                            ⚡ {tool.name}
+                        </span>
+                    ))}
+                </div>
+            )}
+
+            {/* Categories */}
+            {provider.categories.length > 0 && (
+                <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-black/10">
+                    {provider.categories.slice(0, 3).map((cap) => (
+                        <span
+                            key={cap}
+                            className="bg-white/50 border border-black/30 px-1.5 py-0.5 text-[9px] font-bold uppercase opacity-60"
+                        >
+                            {cap}
+                        </span>
+                    ))}
+                    {provider.categories.length > 3 && (
+                        <span className="text-[9px] opacity-40 font-bold">+{provider.categories.length - 3}</span>
+                    )}
+                </div>
+            )}
         </div>
     );
 }
