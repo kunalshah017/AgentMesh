@@ -122,6 +122,8 @@ export function useRegistryAgents() {
         boolean,
       ];
 
+      if (!active) continue;
+
       let reputation: OnChainAgent["reputation"];
       if (repResults?.[i]?.status === "success") {
         const [
