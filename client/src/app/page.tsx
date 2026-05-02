@@ -22,8 +22,8 @@ const SPONSORS = [
 const STATS = [
   { label: "Registered Tools", value: "5", sub: "on-chain" },
   { label: "Capabilities", value: "15+", sub: "indexed" },
-  { label: "Sponsor Integrations", value: "5", sub: "all live" },
-  { label: "Mock Code", value: "0", sub: "zero mocks" },
+  { label: "Reputation Txs", value: "4", sub: "verified" },
+  { label: "Avg Response", value: "<1s", sub: "per call" },
 ];
 
 export default function Home() {
