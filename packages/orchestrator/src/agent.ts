@@ -12,6 +12,7 @@ import {
   PaymentRequiredError,
   discoverToolsByCapability,
   discoverToolsFromRegistry,
+  discoverAgentsFromENS,
   createPaymentProof,
   storeConversationLog,
   recordReputation,
@@ -60,21 +61,38 @@ export class OrchestratorAgent {
   }
 
   /**
-   * Refresh tool registry from on-chain AgentRegistry.
-   * Merges on-chain agents with locally registered ones (deduplicates by ensName).
+   * Refresh tool registry from on-chain AgentRegistry + ENS text records.
+   * Priority: 1) On-chain registry (0G Chain), 2) ENS resolution (Sepolia), 3) Local fallback.
    */
   async refreshRegistry(): Promise<void> {
+    const existingNames = new Set(this.toolRegistry.map((t) => t.ensName));
+
+    // 1. On-chain AgentRegistry (source of truth for active tools)
     try {
       const onChainAgents = await discoverToolsFromRegistry();
-      const existingNames = new Set(this.toolRegistry.map((t) => t.ensName));
       for (const agent of onChainAgents) {
         if (!existingNames.has(agent.ensName)) {
           this.toolRegistry.push(agent);
+          existingNames.add(agent.ensName);
           this.emit({ type: "tool_discovered", tool: agent });
         }
       }
     } catch {
-      // Non-critical — continue with local registry
+      // Non-critical — continue with ENS fallback
+    }
+
+    // 2. ENS resolution (enriches with text records like x402.price)
+    try {
+      const ensAgents = await discoverAgentsFromENS();
+      for (const agent of ensAgents) {
+        if (!existingNames.has(agent.ensName)) {
+          this.toolRegistry.push(agent);
+          existingNames.add(agent.ensName);
+          this.emit({ type: "tool_discovered", tool: agent });
+        }
+      }
+    } catch {
+      // Non-critical — ENS resolution is optional enrichment
     }
   }
 

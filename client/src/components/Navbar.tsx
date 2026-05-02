@@ -6,7 +6,7 @@ import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 interface NavbarProps {
     /** Optional status indicator for dashboard */
-    status?: "connected" | "connecting" | "disconnected";
+    status?: "connected" | "connecting" | "disconnected" | "demo";
     /** Optional event count badge */
     eventCount?: number;
 }
@@ -52,12 +52,12 @@ export function Navbar({ status, eventCount }: NavbarProps) {
             <div className="flex items-center gap-3">
                 {/* Connection status (dashboard only) */}
                 {status && (
-                    <div className={`border-3 border-black px-3 py-1.5 flex items-center gap-2 ${status === "connected" ? "bg-neo-secondary" : status === "connecting" ? "bg-neo-muted" : "bg-neo-white"
+                    <div className={`border-3 border-black px-3 py-1.5 flex items-center gap-2 ${status === "connected" || status === "demo" ? "bg-neo-secondary" : status === "connecting" ? "bg-neo-muted" : "bg-neo-white"
                         }`}>
-                        <span className={`w-2 h-2 rounded-full ${status === "connected" ? "bg-green-500" : status === "connecting" ? "bg-yellow-400" : "bg-red-500"
+                        <span className={`w-2 h-2 rounded-full ${status === "connected" || status === "demo" ? "bg-green-500" : status === "connecting" ? "bg-yellow-400" : "bg-red-500"
                             }`} />
                         <span className="mono text-xs font-black uppercase">
-                            {status === "connected" ? "LIVE" : status === "connecting" ? "..." : "OFF"}
+                            {status === "connected" ? "LIVE" : status === "demo" ? "DEMO" : status === "connecting" ? "..." : "OFF"}
                         </span>
                     </div>
                 )}

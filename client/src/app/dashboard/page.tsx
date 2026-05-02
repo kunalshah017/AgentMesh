@@ -15,11 +15,12 @@ export default function Dashboard() {
     const activeNodes = new Set<string>();
     const recentEvents = events.slice(-10);
     for (const e of recentEvents) {
-        if (e.type === "tool_called") {
-            const tool = String(e.tool ?? "");
+        const tool = String(e.tool ?? (e.subtask as { tool?: string })?.tool ?? "");
+        if (e.type === "tool_called" || e.type === "subtask_started" || e.type === "tool_discovered") {
             if (tool.includes("researcher")) activeNodes.add("researcher");
             if (tool.includes("analyst")) activeNodes.add("risk-analyst");
             if (tool.includes("executor")) activeNodes.add("executor");
+            if (tool.includes("gas-optimizer")) activeNodes.add("gas-optimizer");
         }
     }
     if (events.some((e) => e.type === "task_created" && !events.some((e2) => e2.type === "task_completed"))) {

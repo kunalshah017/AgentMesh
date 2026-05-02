@@ -5,19 +5,22 @@ import { normalize } from "viem/ens";
 import { sepolia } from "viem/chains";
 import type { AgentIdentity } from "./types.js";
 
+const SEPOLIA_RPC = "https://ethereum-sepolia-rpc.publicnode.com";
+const PARENT_DOMAIN = "agent-mesh.eth";
+
 /**
  * Create a viem client for ENS resolution on Sepolia.
  */
 function getEnsClient(rpcUrl?: string) {
   return createPublicClient({
     chain: sepolia,
-    transport: http(rpcUrl ?? "https://rpc.sepolia.org"),
+    transport: http(rpcUrl ?? SEPOLIA_RPC),
   });
 }
 
 /**
  * Resolve an agent's identity from ENS text records.
- * Reads: axl-key, capabilities, price-per-task
+ * Reads: description, x402.price, url
  */
 export async function resolveAgentFromENS(
   ensName: string,
@@ -26,29 +29,23 @@ export async function resolveAgentFromENS(
   const client = getEnsClient(rpcUrl);
   const normalized = normalize(ensName);
 
-  const [axlKey, capabilities, price, name] = await Promise.all([
-    client.getEnsText({ name: normalized, key: "axl-key" }).catch(() => null),
+  const [description, price] = await Promise.all([
     client
-      .getEnsText({ name: normalized, key: "capabilities" })
+      .getEnsText({ name: normalized, key: "description" })
       .catch(() => null),
     client
-      .getEnsText({ name: normalized, key: "price-per-task" })
+      .getEnsText({ name: normalized, key: "x402.price" })
       .catch(() => null),
-    client.getEnsText({ name: normalized, key: "name" }).catch(() => null),
   ]);
 
-  if (!axlKey) {
-    throw new Error(`ENS text record 'axl-key' not found for ${ensName}`);
-  }
+  const name = ensName.split(".")[0];
 
   return {
-    name: name ?? ensName.split(".")[0],
+    name: name.charAt(0).toUpperCase() + name.slice(1),
     ensName,
-    axlPeerKey: axlKey,
-    capabilities: capabilities
-      ? capabilities.split(",").map((s) => s.trim())
-      : [],
-    pricePerCall: price ?? "0.01",
+    axlPeerKey: `${name}-node-key`,
+    capabilities: description ? [description] : [],
+    pricePerCall: price?.replace(" USDC", "") ?? "0.01",
   };
 }
 
@@ -68,7 +65,7 @@ export async function resolveEnsAddress(
 
 /**
  * Discover tools by capability via ENS.
- * In production, this queries ENS subnames under agentmesh.eth.
+ * In production, this queries ENS subnames under agent-mesh.eth.
  * For hackathon, we use a local registry as fallback.
  */
 export async function discoverToolsByCapability(
@@ -83,14 +80,21 @@ export async function discoverToolsByCapability(
 }
 
 /**
- * Try to discover agents from ENS, fall back to local registry.
+ * Discover agents from ENS subnames under agent-mesh.eth.
+ * Falls back gracefully if ENS resolution fails.
  */
 export async function discoverAgentsFromENS(
-  subnames: string[],
+  subnames?: string[],
   rpcUrl?: string,
 ): Promise<AgentIdentity[]> {
+  const names = subnames ?? [
+    `researcher.${PARENT_DOMAIN}`,
+    `executor.${PARENT_DOMAIN}`,
+    `analyst.${PARENT_DOMAIN}`,
+    `gas-optimizer.${PARENT_DOMAIN}`,
+  ];
   const agents: AgentIdentity[] = [];
-  for (const name of subnames) {
+  for (const name of names) {
     try {
       const agent = await resolveAgentFromENS(name, rpcUrl);
       agents.push(agent);

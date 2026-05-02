@@ -7,7 +7,11 @@ export interface AgentEvent {
   [key: string]: unknown;
 }
 
-export type ConnectionStatus = "disconnected" | "connecting" | "connected";
+export type ConnectionStatus =
+  | "disconnected"
+  | "connecting"
+  | "connected"
+  | "demo";
 
 interface UseOrchestratorReturn {
   status: ConnectionStatus;
@@ -19,11 +23,214 @@ interface UseOrchestratorReturn {
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
 
+// Simulated demo flow for when backend is unavailable
+function createDemoFlow(goal: string): { event: AgentEvent; delay: number }[] {
+  return [
+    {
+      delay: 300,
+      event: {
+        type: "system",
+        message: "🔗 Resolving tools from ENS: agent-mesh.eth",
+      },
+    },
+    {
+      delay: 800,
+      event: {
+        type: "tool_discovered",
+        tool: {
+          name: "Researcher",
+          ensName: "researcher.agent-mesh.eth",
+          pricePerCall: "0.01",
+        },
+      },
+    },
+    {
+      delay: 400,
+      event: {
+        type: "tool_discovered",
+        tool: {
+          name: "Executor",
+          ensName: "executor.agent-mesh.eth",
+          pricePerCall: "0.05",
+        },
+      },
+    },
+    {
+      delay: 400,
+      event: {
+        type: "tool_discovered",
+        tool: {
+          name: "Analyst",
+          ensName: "analyst.agent-mesh.eth",
+          pricePerCall: "0.02",
+        },
+      },
+    },
+    {
+      delay: 400,
+      event: {
+        type: "tool_discovered",
+        tool: {
+          name: "Gas-optimizer",
+          ensName: "gas-optimizer.agent-mesh.eth",
+          pricePerCall: "0.01",
+        },
+      },
+    },
+    {
+      delay: 600,
+      event: {
+        type: "task_created",
+        task: { id: "demo-1", goal, status: "in-progress" },
+      },
+    },
+    {
+      delay: 1000,
+      event: {
+        type: "subtask_started",
+        subtask: {
+          tool: "researcher.agent-mesh.eth",
+          capability: "defi-research",
+          status: "running",
+        },
+      },
+    },
+    {
+      delay: 500,
+      event: {
+        type: "payment_sent",
+        payment: {
+          amount: "0.01",
+          to: "researcher.agent-mesh.eth",
+          network: "Base Sepolia",
+          token: "USDC",
+        },
+      },
+    },
+    {
+      delay: 1200,
+      event: {
+        type: "subtask_completed",
+        subtask: {
+          tool: "researcher.agent-mesh.eth",
+          result: "Found 3 DEX pools with >$1M TVL",
+        },
+      },
+    },
+    {
+      delay: 600,
+      event: {
+        type: "reputation_recorded",
+        agent: "researcher.agent-mesh.eth",
+        chain: "0G Chain",
+        success: true,
+      },
+    },
+    {
+      delay: 800,
+      event: {
+        type: "subtask_started",
+        subtask: {
+          tool: "analyst.agent-mesh.eth",
+          capability: "risk-analysis",
+          status: "running",
+        },
+      },
+    },
+    {
+      delay: 500,
+      event: {
+        type: "payment_sent",
+        payment: {
+          amount: "0.02",
+          to: "analyst.agent-mesh.eth",
+          network: "Base Sepolia",
+          token: "USDC",
+        },
+      },
+    },
+    {
+      delay: 1000,
+      event: {
+        type: "subtask_completed",
+        subtask: {
+          tool: "analyst.agent-mesh.eth",
+          result: "Risk score: LOW (0.12). Slippage < 0.3%",
+        },
+      },
+    },
+    {
+      delay: 600,
+      event: {
+        type: "reputation_recorded",
+        agent: "analyst.agent-mesh.eth",
+        chain: "0G Chain",
+        success: true,
+      },
+    },
+    {
+      delay: 800,
+      event: {
+        type: "subtask_started",
+        subtask: {
+          tool: "executor.agent-mesh.eth",
+          capability: "execute-swap",
+          status: "running",
+        },
+      },
+    },
+    {
+      delay: 500,
+      event: {
+        type: "payment_sent",
+        payment: {
+          amount: "0.05",
+          to: "executor.agent-mesh.eth",
+          network: "Base Sepolia",
+          token: "USDC",
+        },
+      },
+    },
+    {
+      delay: 1500,
+      event: {
+        type: "subtask_completed",
+        subtask: {
+          tool: "executor.agent-mesh.eth",
+          result: "Swap routed: 1 ETH → 2,304 USDC via Uniswap V3",
+        },
+      },
+    },
+    {
+      delay: 600,
+      event: {
+        type: "reputation_recorded",
+        agent: "executor.agent-mesh.eth",
+        chain: "0G Chain",
+        success: true,
+      },
+    },
+    {
+      delay: 500,
+      event: {
+        type: "task_completed",
+        task: {
+          id: "demo-1",
+          goal,
+          status: "completed",
+          totalCost: "0.08 USDC",
+        },
+      },
+    },
+  ];
+}
+
 export function useOrchestrator(): UseOrchestratorReturn {
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
+  const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [events, setEvents] = useState<AgentEvent[]>([]);
 
@@ -80,20 +287,25 @@ export function useOrchestrator(): UseOrchestratorReturn {
         wsRef.current.send(JSON.stringify({ type: "goal", goal }));
         return;
       }
-      // Fallback: HTTP POST
-      fetch(`${API_URL}/goal`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ goal }),
-      })
-        .then((r) => r.json())
-        .then((data) => addEvent({ type: "task_result", ...(data as object) }))
-        .catch(() => addEvent({ type: "error", message: "Connection failed" }));
+
+      // Demo mode: simulate full orchestration flow
+      setStatus("demo");
+      addEvent({ type: "system", message: `🎯 Goal: "${goal}"` });
+      const flow = createDemoFlow(goal);
+      let cumulative = 0;
+      demoTimers.current = flow.map(({ event, delay }) => {
+        cumulative += delay;
+        return setTimeout(() => addEvent(event), cumulative);
+      });
     },
     [addEvent],
   );
 
-  const clearEvents = useCallback(() => setEvents([]), []);
+  const clearEvents = useCallback(() => {
+    demoTimers.current.forEach(clearTimeout);
+    demoTimers.current = [];
+    setEvents([]);
+  }, []);
 
   return { status, events, sendGoal, clearEvents };
 }

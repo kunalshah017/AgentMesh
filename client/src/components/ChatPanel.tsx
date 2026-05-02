@@ -199,8 +199,8 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
           COMMAND INTERFACE
         </h2>
         <div className="flex items-center gap-2">
-          <span className={`status-dot ${status === "connected" ? "active" : status === "connecting" ? "warning" : "error"}`} />
-          <span className="text-xs font-black uppercase text-black">{status}</span>
+          <span className={`status-dot ${status === "connected" || status === "demo" ? "active" : status === "connecting" ? "warning" : "error"}`} />
+          <span className="text-xs font-black uppercase text-black">{status === "demo" ? "DEMO" : status}</span>
         </div>
       </div>
 
