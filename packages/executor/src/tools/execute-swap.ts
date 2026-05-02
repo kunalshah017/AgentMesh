@@ -33,8 +33,8 @@ interface UniswapQuoteResponse {
 
 /**
  * Execute a token swap via Uniswap Trading API.
- * Flow: check_approval → quote → (in production: sign & submit)
- * For demo: gets real quote with pricing, returns simulated execution.
+ * Flow: quote → (production: check_approval → sign & submit)
+ * Gets real mainnet quote. Execution requires funded wallet + approval.
  */
 export async function executeSwap(
   tokenIn: string,
@@ -49,8 +49,14 @@ export async function executeSwap(
 
   const apiKey = process.env.UNISWAP_API_KEY;
   if (!apiKey) {
-    console.log("   ⚠️ No UNISWAP_API_KEY — returning mock result");
-    return mockSwapResult(tokenIn, tokenOut, amount);
+    return {
+      status: "failed",
+      tokenIn: tokenIn.toUpperCase(),
+      tokenOut: tokenOut.toUpperCase(),
+      amountIn: amount,
+      amountOut: "0",
+      route: "No API key",
+    };
   }
 
   try {
@@ -91,8 +97,14 @@ export async function executeSwap(
       console.log(
         `   ❌ Uniswap quote error (${quoteResponse.status}): ${errBody}`,
       );
-      // Fallback to mock on API error
-      return mockSwapResult(tokenIn, tokenOut, amount);
+      return {
+        status: "failed",
+        tokenIn: tokenIn.toUpperCase(),
+        tokenOut: tokenOut.toUpperCase(),
+        amountIn: amount,
+        amountOut: "0",
+        route: `Uniswap API error: ${quoteResponse.status}`,
+      };
     }
 
     const data = (await quoteResponse.json()) as UniswapQuoteResponse;
@@ -105,9 +117,13 @@ export async function executeSwap(
     const outputAmount = data.quote?.output?.amount ?? "0";
     const amountOut = fromBaseUnits(outputAmount, outDecimals);
 
+    // Quote is real — execution requires wallet signing (not done here)
+    // Return quote result with status "pending" (awaiting wallet signature)
     return {
-      status: "success",
-      txHash: `0x${data.requestId?.replace(/-/g, "") ?? Math.random().toString(16).slice(2)}`,
+      status: "pending",
+      txHash: data.quote?.methodParameters
+        ? `0x${data.requestId?.replace(/-/g, "")}`
+        : undefined,
       tokenIn: tokenIn.toUpperCase(),
       tokenOut: tokenOut.toUpperCase(),
       amountIn: amount,
@@ -122,8 +138,14 @@ export async function executeSwap(
     };
   } catch (error) {
     console.log(`   ❌ Uniswap API error: ${error}`);
-    // Graceful fallback to mock
-    return mockSwapResult(tokenIn, tokenOut, amount);
+    return {
+      status: "failed",
+      tokenIn: tokenIn.toUpperCase(),
+      tokenOut: tokenOut.toUpperCase(),
+      amountIn: amount,
+      amountOut: "0",
+      route: `Error: ${String(error).slice(0, 60)}`,
+    };
   }
 }
 
@@ -159,34 +181,4 @@ function fromBaseUnits(amount: string, decimals: number): string {
   const frac = str.slice(str.length - decimals);
   const trimmed = frac.replace(/0+$/, "");
   return trimmed ? `${whole}.${trimmed}` : whole;
-}
-
-function mockSwapResult(
-  tokenIn: string,
-  tokenOut: string,
-  amount: string,
-): SwapResult {
-  const amountNum = parseFloat(amount);
-  const prices: Record<string, number> = {
-    ETH: 3245,
-    USDC: 1,
-    USDT: 1,
-    DAI: 1,
-    WETH: 3245,
-    WBTC: 67000,
-    UNI: 7.5,
-  };
-  const inPrice = prices[tokenIn.toUpperCase()] ?? 1;
-  const outPrice = prices[tokenOut.toUpperCase()] ?? 1;
-  const output = (amountNum * inPrice) / outPrice;
-  return {
-    status: "success",
-    txHash: `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`,
-    tokenIn: tokenIn.toUpperCase(),
-    tokenOut: tokenOut.toUpperCase(),
-    amountIn: amount,
-    amountOut: output.toFixed(outPrice === 1 ? 2 : 6),
-    route: "Uniswap V3 (mock)",
-    gasEstimate: "~$2.50",
-  };
 }

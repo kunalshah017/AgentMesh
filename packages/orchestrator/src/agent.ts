@@ -349,12 +349,26 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
     if (this.config.localMode && this.localRouter) {
       const toolName = this.resolveToolName(subtask);
 
-      // Simulate x402 payment for demo visibility
+      // Create real x402 payment proof (EIP-712 signed)
       const price = TOOL_PRICES[toolName as keyof typeof TOOL_PRICES] ?? "0.01";
+      const paymentProof = await createPaymentProof(
+        this.config.walletAddress ?? "0xOrchestrator",
+        tool.ensName,
+        price,
+      );
+
+      // Derive txHash from the signed proof
+      const proofData = JSON.parse(
+        Buffer.from(paymentProof, "base64").toString(),
+      );
+      const txHash = proofData.signature
+        ? proofData.signature.slice(0, 66)
+        : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
+
       const payment: PaymentRecord = {
-        txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`,
+        txHash,
         amount: price,
-        from: this.config.walletAddress ?? "0xOrchestrator",
+        from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
         to: tool.ensName,
         timestamp: Date.now(),
       };

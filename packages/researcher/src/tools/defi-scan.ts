@@ -59,14 +59,7 @@ export async function scanYields(
       chain: pool.chain,
     }));
   } catch (error) {
-    console.error("DeFiLlama fetch failed, using mock data:", error);
-    // Fallback mock data for demo reliability
-    return [
-      { protocol: "Lido", pool: "stETH", apy: "4.2%", tvl: "$14.2B", risk: "low", chain: "Ethereum" },
-      { protocol: "Aave V3", pool: "ETH Supply", apy: "3.1%", tvl: "$8.9B", risk: "low", chain: "Ethereum" },
-      { protocol: "Pendle", pool: "PT-stETH", apy: "12.1%", tvl: "$890M", risk: "medium", chain: "Ethereum" },
-      { protocol: "Compound V3", pool: "ETH", apy: "2.8%", tvl: "$3.2B", risk: "low", chain: "Ethereum" },
-      { protocol: "Morpho", pool: "ETH/USDC", apy: "8.5%", tvl: "$1.1B", risk: "medium", chain: "Ethereum" },
-    ];
+    console.error("DeFiLlama fetch failed:", error);
+    throw new Error(`DeFi yield scan unavailable: ${error}`);
   }
 }

@@ -44,14 +44,7 @@ export async function getProtocolStats(protocol: string): Promise<ProtocolData> 
       audited: data.audits !== "0",
     };
   } catch (error) {
-    console.error("DeFiLlama protocol fetch failed, using mock:", error);
-    return {
-      name: protocol,
-      tvl: "$14.2B",
-      change7d: "+3.2%",
-      chains: ["Ethereum", "Arbitrum", "Polygon"],
-      category: "Liquid Staking",
-      audited: true,
-    };
+    console.error("DeFiLlama protocol fetch failed:", error);
+    throw new Error(`Protocol stats unavailable for ${protocol}: ${error}`);
   }
 }

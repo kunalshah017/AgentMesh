@@ -34,8 +34,13 @@ export async function executeDeposit(
 
   const apiKey = process.env.KEEPERHUB_API_KEY;
   if (!apiKey) {
-    console.log("   ⚠️ No KEEPERHUB_API_KEY — returning mock result");
-    return mockDepositResult(protocol, token, amount);
+    console.log("   ⚠️ No KEEPERHUB_API_KEY — deposit cannot proceed");
+    return {
+      status: "failed",
+      protocol,
+      token: token.toUpperCase(),
+      amount,
+    };
   }
 
   try {
@@ -49,8 +54,13 @@ export async function executeDeposit(
     );
 
     if (!generateResponse.result) {
-      console.log(`   ⚠️ KeeperHub generation failed, using mock`);
-      return mockDepositResult(protocol, token, amount);
+      console.log(`   ⚠️ KeeperHub generation returned no result`);
+      return {
+        status: "failed",
+        protocol,
+        token: token.toUpperCase(),
+        amount,
+      };
     }
 
     // Parse workflow ID from response
@@ -97,8 +107,12 @@ export async function executeDeposit(
     };
   } catch (error) {
     console.log(`   ❌ KeeperHub error: ${error}`);
-    // Graceful fallback
-    return mockDepositResult(protocol, token, amount);
+    return {
+      status: "failed",
+      protocol,
+      token: token.toUpperCase(),
+      amount,
+    };
   }
 }
 
@@ -214,20 +228,4 @@ function getReceiptToken(protocol: string, token: string): string {
     yearn: `yv${token.toUpperCase()}`,
   };
   return receiptTokens[protocol.toLowerCase()] ?? `${protocol}-${token}`;
-}
-
-function mockDepositResult(
-  protocol: string,
-  token: string,
-  amount: string,
-): DepositResult {
-  return {
-    status: "success",
-    txHash: `0x${Math.random().toString(16).slice(2)}${Math.random().toString(16).slice(2)}`,
-    protocol,
-    token: token.toUpperCase(),
-    amount,
-    receivedToken: getReceiptToken(protocol, token),
-    receivedAmount: amount,
-  };
 }

@@ -53,14 +53,7 @@ export async function getTokenInfo(token: string): Promise<TokenData> {
       volume24h: `$${(info.usd_24h_vol / 1_000_000_000).toFixed(1)}B`,
     };
   } catch (error) {
-    console.error("CoinGecko fetch failed, using mock:", error);
-    return {
-      symbol: token.toUpperCase(),
-      name: token,
-      price: "$3,245.00",
-      change24h: "+2.4%",
-      marketCap: "$390.2B",
-      volume24h: "$18.5B",
-    };
+    console.error("CoinGecko fetch failed:", error);
+    throw new Error(`Token info unavailable for ${token}: ${error}`);
   }
 }
