@@ -226,6 +226,29 @@ export class OrchestratorAgent {
       const plan = await this.planTask(goal);
       task.subtasks = plan;
 
+      // If no subtasks, it's a conversational message — respond directly
+      if (task.subtasks.length === 0) {
+        const response = await this.llm.chat.completions.create({
+          model: ZERO_G.computeModel,
+          messages: [
+            {
+              role: "system",
+              content:
+                "You are AgentMesh, a DeFi agent orchestrator. Respond briefly and helpfully to the user. If they greet you, greet back and explain what you can do (DeFi research, risk analysis, swaps, yield scanning, etc.).",
+            },
+            { role: "user", content: goal },
+          ],
+          temperature: 0.7,
+        });
+        const reply =
+          response.choices[0]?.message?.content ??
+          "Hello! I'm AgentMesh. I can help with DeFi research, risk analysis, yield scanning, and executing swaps. What would you like to do?";
+        task.status = "completed";
+        task.completedAt = Date.now();
+        this.emit({ type: "task_completed", taskId: task.id, result: reply });
+        return task;
+      }
+
       // Step 2: Execute each subtask
       for (const subtask of task.subtasks) {
         subtask.status = "in-progress";
@@ -430,17 +453,7 @@ export class OrchestratorAgent {
       });
     }
 
-    // Default if nothing matched
-    if (subtasks.length === 0) {
-      subtasks.push({
-        id: uuid(),
-        parentId: "",
-        description: goal,
-        assignedTool: "defi-research",
-        status: "pending",
-      });
-    }
-
+    // If nothing matched, it's likely conversational — return empty
     return subtasks;
   }
 
@@ -450,7 +463,9 @@ export class OrchestratorAgent {
 Available tools:
 ${toolSummary}
 
-Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]
+IMPORTANT: If the user's message is conversational (greeting, question about you, thanks, etc.) and does NOT require any tool execution, respond with an empty array: []
+
+Otherwise respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]
 Use exact tool names from the list above. If unsure, use the closest match.`;
 
     const response = await this.llm.chat.completions.create({
@@ -553,13 +568,6 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
               nonce,
             },
           };
-
-          this.emit({
-            type: "payment_request",
-            toolName,
-            amount: price,
-            recipient: tool.ensName,
-          });
 
           const approval = await this.paymentApprovalCallback({
             toolName,
