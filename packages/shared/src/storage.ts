@@ -127,7 +127,87 @@ export async function uploadToStorage(
   });
 }
 
-/** 
+/**
+ * Batch-upload multiple KV entries in a single 0G transaction.
+ * Significantly reduces gas cost and latency vs. individual writes.
+ */
+export async function batchUploadToStorage(
+  entries: Array<{ key: string; data: Record<string, unknown> }>,
+  privateKey?: string,
+): Promise<string[]> {
+  if (entries.length === 0) return [];
+
+  const pk = privateKey ?? process.env.PRIVATE_KEY;
+  if (!pk) {
+    return entries.map((e) => {
+      const hash = ethers.keccak256(
+        Buffer.from(JSON.stringify(e.data), "utf8"),
+      );
+      console.log(
+        `  📦 [0G Storage] No private key — content-addressed: ${hash.slice(0, 18)}...`,
+      );
+      return hash;
+    });
+  }
+
+  return enqueueWrite(async () => {
+    try {
+      const provider = new ethers.JsonRpcProvider(ZERO_G.chainRpc);
+      const signer = new ethers.Wallet(pk, provider);
+      const indexer = new Indexer(INDEXER_RPC);
+
+      const [nodes, selectError] = await indexer.selectNodes(1);
+      if (selectError !== null) {
+        throw new Error(`Node selection failed: ${selectError.message}`);
+      }
+
+      const status = await nodes[0]?.getStatus();
+      const flowAddress = status?.networkIdentity?.flowAddress;
+      if (!flowAddress) {
+        throw new Error("Storage node did not return flow contract address");
+      }
+
+      const flow = getFlowContract(flowAddress, signer as any);
+      const batcher = new Batcher(1, nodes, flow, ZERO_G.chainRpc);
+
+      // Set all KV entries in a single batch
+      for (const entry of entries) {
+        const bytes = Buffer.from(JSON.stringify(entry.data), "utf8");
+        batcher.streamDataBuilder.set(
+          STREAM_ID,
+          Buffer.from(entry.key, "utf8"),
+          bytes,
+        );
+      }
+
+      const [result, uploadError] = await batcher.exec({
+        finalityRequired: false,
+        expectedReplica: 1,
+      });
+
+      if (uploadError !== null) {
+        throw new Error(`KV batch write failed: ${uploadError.message}`);
+      }
+
+      const rootHash = result.rootHash ?? "";
+      const txHash = result.txHash ?? "";
+      console.log(
+        `  📦 [0G Storage] Batch written (${entries.length} keys) rootHash=${rootHash.slice(0, 18)}... txHash=${txHash.slice(0, 18)}...`,
+      );
+
+      return entries.map(() => rootHash);
+    } catch (error) {
+      console.log(
+        `  ⚠️ [0G Storage] Batch write failed (${error}), using content hashes`,
+      );
+      return entries.map((e) =>
+        ethers.keccak256(Buffer.from(JSON.stringify(e.data), "utf8")),
+      );
+    }
+  });
+}
+
+/**
  * Download JSON data from 0G KV Storage by key.
  */
 export async function downloadFromStorage(

@@ -107,16 +107,27 @@ export function ChatPanel({ events, onSendGoal, status, walletConnected, wrongCh
           break;
         }
         case "task_completed": {
-          const task = (event.result ?? event.task) as { subtasks?: Array<{ description?: string; status?: string; result?: unknown }> } | undefined;
-          if (task?.subtasks) {
-            for (const sub of task.subtasks) {
-              const statusIcon = sub.status === "completed" ? "✓" : sub.status === "failed" ? "✗" : "…";
-              msgs.push({
-                role: "mesh",
-                content: `${statusIcon} ${sub.description}\n${sub.result ? formatResult(sub.result) : ""}`,
-                timestamp: ts,
-                eventType: sub.status === "completed" ? "success" : "error",
-              });
+          const result = event.result ?? event.task;
+          if (typeof result === "string") {
+            // Conversational reply (no subtasks)
+            msgs.push({
+              role: "mesh",
+              content: result,
+              timestamp: ts,
+              eventType: "success",
+            });
+          } else {
+            const task = result as { subtasks?: Array<{ description?: string; status?: string; result?: unknown }> } | undefined;
+            if (task?.subtasks) {
+              for (const sub of task.subtasks) {
+                const statusIcon = sub.status === "completed" ? "✓" : sub.status === "failed" ? "✗" : "…";
+                msgs.push({
+                  role: "mesh",
+                  content: `${statusIcon} ${sub.description}\n${sub.result ? formatResult(sub.result) : ""}`,
+                  timestamp: ts,
+                  eventType: sub.status === "completed" ? "success" : "error",
+                });
+              }
             }
           }
           msgs.push({

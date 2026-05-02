@@ -4,7 +4,7 @@
 // On first access per wallet, rehydrates from 0G using deterministic keys.
 
 import { v4 as uuid } from "uuid";
-import { uploadToStorage, downloadFromStorage } from "@agentmesh/shared";
+import { batchUploadToStorage, downloadFromStorage } from "@agentmesh/shared";
 
 export interface ChatMessage {
   id: string;
@@ -106,8 +106,11 @@ class ChatStore {
             `  📦 [0G] Loaded ${chatEntries.length} chats for ${addr.slice(0, 10)}...`,
           );
         }
-      } catch {
+      } catch (err) {
         // No index found — first time user or 0G unavailable
+        console.log(
+          `  📦 [0G] No chat index found for ${addr.slice(0, 10)}... (${err instanceof Error ? err.message : "unavailable"})`,
+        );
       }
       this.loadedWallets.add(addr);
     })();
@@ -117,41 +120,22 @@ class ChatStore {
     this.loadingWallets.delete(addr);
   }
 
-  /** Persist a chat to 0G Storage (non-blocking) */
-  private persistTo0G(chat: Chat): void {
-    const data = {
+  /** Persist chat data + index in a single 0G transaction (non-blocking) */
+  private persistChatAndIndex(chat: Chat): void {
+    const addr = chat.walletAddress.toLowerCase();
+    const chatData = {
       type: "agentmesh-chat",
       version: "1.0",
       chatId: chat.id,
-      walletAddress: chat.walletAddress,
+      walletAddress: addr,
       title: chat.title,
       messages: chat.messages,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
     };
 
-    const key = this.chatKey(chat.walletAddress, chat.id);
-    uploadToStorage(
-      data as Record<string, unknown>,
-      undefined,
-      undefined,
-      undefined,
-      key,
-    )
-      .then((hash) => {
-        chat.storageHash = hash;
-        console.log(`  📦 [0G] Chat ${chat.id.slice(0, 8)} persisted → ${key}`);
-      })
-      .catch((err) => {
-        console.log(`  ⚠️ [0G] Chat persist failed: ${err}`);
-      });
-  }
-
-  /** Persist the user's chat index to 0G Storage (non-blocking) */
-  private persistIndex(walletAddress: string): void {
-    const addr = walletAddress.toLowerCase();
     const userChats = this.getUserChats(addr);
-    const index = {
+    const indexData = {
       type: "agentmesh-chat-index",
       version: "1.0",
       walletAddress: addr,
@@ -166,18 +150,22 @@ class ChatStore {
       updatedAt: Date.now(),
     };
 
-    const key = this.indexKey(addr);
-    uploadToStorage(
-      index as Record<string, unknown>,
-      undefined,
-      undefined,
-      undefined,
-      key,
-    )
-      .then((hash) => {
-        console.log(`  📦 [0G] Chat index for ${addr.slice(0, 8)}... → ${key}`);
+    const chatKey = this.chatKey(addr, chat.id);
+    const indexKey = this.indexKey(addr);
+
+    batchUploadToStorage([
+      { key: chatKey, data: chatData as Record<string, unknown> },
+      { key: indexKey, data: indexData as Record<string, unknown> },
+    ])
+      .then(([chatHash]) => {
+        if (chatHash) chat.storageHash = chatHash;
+        console.log(
+          `  📦 [0G] Chat ${chat.id.slice(0, 8)} + index persisted (1 tx)`,
+        );
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.log(`  ⚠️ [0G] Batch persist failed: ${err}`);
+      });
   }
 
   /** Create a new chat for a user */
@@ -191,8 +179,7 @@ class ChatStore {
       updatedAt: Date.now(),
     };
     this.getUserChats(walletAddress).set(chat.id, chat);
-    this.persistTo0G(chat);
-    this.persistIndex(walletAddress);
+    // Don't persist empty chat — first addMessage will trigger debounced persist
     return chat;
   }
 
@@ -240,7 +227,7 @@ class ChatStore {
       timerKey,
       setTimeout(() => {
         this.persistTimers.delete(timerKey);
-        this.persistTo0G(chat);
+        this.persistChatAndIndex(chat);
       }, 2000),
     );
 
@@ -250,7 +237,13 @@ class ChatStore {
   /** Delete a chat */
   deleteChat(walletAddress: string, chatId: string): boolean {
     const deleted = this.getUserChats(walletAddress).delete(chatId);
-    if (deleted) this.persistIndex(walletAddress);
+    if (deleted) {
+      // Persist updated index (use a dummy chat entry for batch)
+      const remaining = Array.from(this.getUserChats(walletAddress).values());
+      if (remaining.length > 0) {
+        this.persistChatAndIndex(remaining[0]);
+      }
+    }
     return deleted;
   }
 }

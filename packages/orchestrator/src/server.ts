@@ -518,25 +518,37 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
               "payment",
             );
           } else if (event.type === "task_completed") {
-            const task = event.result as
-              | {
-                  subtasks?: Array<{
-                    description?: string;
-                    status?: string;
-                    result?: unknown;
-                  }>;
+            const result = event.result;
+            if (typeof result === "string") {
+              // Conversational reply (no subtasks)
+              chatStore.addMessage(
+                wsWallet,
+                wsChatId,
+                "mesh",
+                result,
+                "success",
+              );
+            } else {
+              const task = result as
+                | {
+                    subtasks?: Array<{
+                      description?: string;
+                      status?: string;
+                      result?: unknown;
+                    }>;
+                  }
+                | undefined;
+              if (task?.subtasks) {
+                for (const sub of task.subtasks) {
+                  const icon = sub.status === "completed" ? "✓" : "✗";
+                  chatStore.addMessage(
+                    wsWallet,
+                    wsChatId,
+                    "mesh",
+                    `${icon} ${sub.description}\n${sub.result ? JSON.stringify(sub.result) : ""}`,
+                    sub.status === "completed" ? "success" : "error",
+                  );
                 }
-              | undefined;
-            if (task?.subtasks) {
-              for (const sub of task.subtasks) {
-                const icon = sub.status === "completed" ? "✓" : "✗";
-                chatStore.addMessage(
-                  wsWallet,
-                  wsChatId,
-                  "mesh",
-                  `${icon} ${sub.description}\n${sub.result ? JSON.stringify(sub.result) : ""}`,
-                  sub.status === "completed" ? "success" : "error",
-                );
               }
             }
             chatStore.addMessage(
