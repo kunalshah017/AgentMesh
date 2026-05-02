@@ -228,21 +228,25 @@ export class OrchestratorAgent {
 
       // If no subtasks, it's a conversational message — respond directly
       if (task.subtasks.length === 0) {
-        const response = await this.llm.chat.completions.create({
-          model: ZERO_G.computeModel,
-          messages: [
-            {
-              role: "system",
-              content:
-                "You are AgentMesh, a DeFi agent orchestrator. Respond briefly and helpfully to the user. If they greet you, greet back and explain what you can do (DeFi research, risk analysis, swaps, yield scanning, etc.).",
-            },
-            { role: "user", content: goal },
-          ],
-          temperature: 0.7,
-        });
-        const reply =
-          response.choices[0]?.message?.content ??
-          "Hello! I'm AgentMesh. I can help with DeFi research, risk analysis, yield scanning, and executing swaps. What would you like to do?";
+        let reply =
+          "Hello! I'm AgentMesh — a DeFi agent orchestrator. I can help with DeFi research, risk analysis, yield scanning, protocol stats, and executing swaps. What would you like to do?";
+        try {
+          const response = await this.llm.chat.completions.create({
+            model: ZERO_G.computeModel,
+            messages: [
+              {
+                role: "system",
+                content:
+                  "You are AgentMesh, a DeFi agent orchestrator. Respond briefly and helpfully to the user. If they greet you, greet back and explain what you can do (DeFi research, risk analysis, swaps, yield scanning, etc.).",
+              },
+              { role: "user", content: goal },
+            ],
+            temperature: 0.7,
+          });
+          reply = response.choices[0]?.message?.content ?? reply;
+        } catch {
+          // LLM unavailable — use fallback greeting
+        }
         task.status = "completed";
         task.completedAt = Date.now();
         this.emit({ type: "task_completed", taskId: task.id, result: reply });
