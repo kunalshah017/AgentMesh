@@ -19,7 +19,10 @@ import {
   payWithAnyToken,
 } from "@agentmesh/executor/tools";
 
-const PORT = parseInt(process.env.ORCHESTRATOR_PORT ?? "3001", 10);
+const PORT = parseInt(
+  process.env.PORT ?? process.env.ORCHESTRATOR_PORT ?? "3001",
+  10,
+);
 const AXL_PORT = AXL_PORTS.orchestrator;
 const LOCAL_MODE = process.env.LOCAL_MODE !== "false"; // Default: local mode ON
 

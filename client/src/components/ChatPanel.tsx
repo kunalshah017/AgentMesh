@@ -51,8 +51,11 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
 
   // Build chat messages from events + user goals
   const messages = useMemo(() => {
+    const initialMsg = status === "connected"
+      ? "AgentMesh ready. Enter a goal to begin orchestration."
+      : "AgentMesh ready. Backend not connected — running in DEMO mode. Enter a goal to see the orchestration flow.";
     const msgs: Message[] = [
-      { role: "system", content: "AgentMesh ready. Enter a goal to begin orchestration.", timestamp: 0 },
+      { role: "system", content: initialMsg, timestamp: 0 },
     ];
 
     let goalIdx = 0;
@@ -156,7 +159,7 @@ export function ChatPanel({ events, onSendGoal, status }: ChatPanelProps) {
     }
 
     return msgs;
-  }, [events, userGoals]);
+  }, [events, userGoals, status]);
 
   // Track loading state from events
   useEffect(() => {

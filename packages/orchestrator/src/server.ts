@@ -22,6 +22,11 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
     res.json({ status: "ok", agent: "orchestrator", timestamp: Date.now() });
   });
 
+  // Tool registry
+  app.get("/registry", (_req, res) => {
+    res.json(agent.getRegistry());
+  });
+
   // Submit a goal
   app.post("/goal", async (req, res) => {
     const { goal } = req.body as { goal?: string };
@@ -71,7 +76,10 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
 
     ws.on("message", async (data) => {
       try {
-        const message = JSON.parse(data.toString()) as { type: string; goal?: string };
+        const message = JSON.parse(data.toString()) as {
+          type: string;
+          goal?: string;
+        };
         if (message.type === "goal" && message.goal) {
           const task = await agent.processGoal(message.goal);
           ws.send(JSON.stringify({ type: "task_result", task }));

@@ -230,6 +230,7 @@ export function useOrchestrator(): UseOrchestratorReturn {
   const reconnectTimer = useRef<ReturnType<typeof setTimeout> | undefined>(
     undefined,
   );
+  const reconnectAttempts = useRef(0);
   const demoTimers = useRef<ReturnType<typeof setTimeout>[]>([]);
   const [status, setStatus] = useState<ConnectionStatus>("disconnected");
   const [events, setEvents] = useState<AgentEvent[]>([]);
@@ -239,13 +240,22 @@ export function useOrchestrator(): UseOrchestratorReturn {
   }, []);
 
   const connect = useCallback(() => {
+    // Don't attempt WebSocket if no backend URL configured (deployed without backend)
+    if (
+      WS_URL === "ws://localhost:3001" &&
+      typeof window !== "undefined" &&
+      window.location.hostname !== "localhost"
+    )
+      return;
     if (wsRef.current?.readyState === WebSocket.OPEN) return;
+    if (reconnectAttempts.current >= 3) return; // Stop after 3 failed attempts
 
     setStatus("connecting");
     const ws = new WebSocket(WS_URL);
 
     ws.onopen = () => {
       setStatus("connected");
+      reconnectAttempts.current = 0;
       addEvent({ type: "system", message: "Connected to Orchestrator" });
     };
 
@@ -261,8 +271,10 @@ export function useOrchestrator(): UseOrchestratorReturn {
     ws.onclose = () => {
       setStatus("disconnected");
       wsRef.current = null;
-      // Auto-reconnect after 3s
-      reconnectTimer.current = setTimeout(connect, 3000);
+      reconnectAttempts.current++;
+      if (reconnectAttempts.current < 3) {
+        reconnectTimer.current = setTimeout(connect, 3000);
+      }
     };
 
     ws.onerror = () => {

@@ -1,0 +1,25 @@
+services:
+  # Orchestrator Backend (WebSocket + REST API)
+  - type: web
+    name: agentmesh-orchestrator
+    runtime: node
+    region: oregon
+    plan: free
+    rootDir: ./
+    buildCommand: curl -fsSL https://bun.sh/install | bash && export PATH="$HOME/.bun/bin:$PATH" && bun install && bun run build
+    startCommand: node packages/orchestrator/dist/index.js
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: LOCAL_MODE
+        value: "true"
+      - key: ZG_SERVICE_URL
+        sync: false
+      - key: ZG_API_SECRET
+        sync: false
+      - key: PRIVATE_KEY
+        sync: false
+      - key: UNISWAP_API_KEY
+        sync: false
+      - key: KEEPERHUB_API_KEY
+        sync: false

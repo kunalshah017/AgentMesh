@@ -61,6 +61,13 @@ export class OrchestratorAgent {
   }
 
   /**
+   * Return current tool registry (for API).
+   */
+  getRegistry(): AgentIdentity[] {
+    return this.toolRegistry;
+  }
+
+  /**
    * Refresh tool registry from on-chain AgentRegistry + ENS text records.
    * Priority: 1) On-chain registry (0G Chain), 2) ENS resolution (Sepolia), 3) Local fallback.
    */

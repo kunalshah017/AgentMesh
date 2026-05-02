@@ -43,11 +43,14 @@ export function ToolRegistry() {
     const [tools, setTools] = useState<RegisteredTool[]>(FALLBACK_REGISTRY);
     const [loading, setLoading] = useState(false);
 
-    // Try to fetch live registry from orchestrator API
+    // Try to fetch live registry from orchestrator API (only when backend URL is configured)
     useEffect(() => {
-        const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001";
+        const API_URL = process.env.NEXT_PUBLIC_API_URL;
+        // Skip if no API URL set, or if we're on a deployed domain hitting localhost
+        if (!API_URL && typeof window !== "undefined" && window.location.hostname !== "localhost") return;
+        const url = API_URL ?? "http://localhost:3001";
         setLoading(true);
-        fetch(`${API_URL}/registry`)
+        fetch(`${url}/registry`)
             .then((r) => r.json())
             .then((data) => {
                 if (Array.isArray(data) && data.length > 0) {
