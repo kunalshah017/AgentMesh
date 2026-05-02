@@ -46,7 +46,8 @@ export async function discoverToolsFromRegistry(): Promise<AgentIdentity[]> {
         agents.push({
           name: formattedName,
           ensName,
-          axlPeerKey,
+          axlPeerKey: axlPeerKey.startsWith("http") ? "" : axlPeerKey,
+          endpoint: axlPeerKey.startsWith("http") ? axlPeerKey : undefined,
           capabilities: [...capabilities],
           pricePerCall: ethers.formatUnits(pricePerCall, 6), // USDC 6 decimals
         });

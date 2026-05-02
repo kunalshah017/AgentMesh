@@ -393,6 +393,66 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
     tool: AgentIdentity,
     subtask: SubTask,
   ): Promise<unknown> {
+    // External HTTP endpoint: call tool via its registered URL
+    if (tool.endpoint && tool.endpoint.startsWith("http")) {
+      const price = tool.pricePerCall ?? "0.01";
+      const paymentProof = await createPaymentProof(
+        this.config.walletAddress ?? "0xOrchestrator",
+        tool.ensName,
+        price,
+      );
+
+      const proofData = JSON.parse(
+        Buffer.from(paymentProof, "base64").toString(),
+      );
+      const txHash = proofData.signature
+        ? proofData.signature.slice(0, 66)
+        : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
+
+      const payment: PaymentRecord = {
+        txHash,
+        amount: price,
+        from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
+        to: tool.ensName,
+        timestamp: Date.now(),
+      };
+      this.emit({ type: "payment_sent", payment });
+      subtask.payment = payment;
+
+      // Call the external MCP/HTTP endpoint
+      const response = await fetch(tool.endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Payment": paymentProof,
+        },
+        body: JSON.stringify({
+          jsonrpc: "2.0",
+          method: "tools/call",
+          id: 1,
+          params: {
+            name: subtask.assignedTool,
+            arguments: { task: subtask.description },
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(
+          `External tool returned ${response.status}: ${response.statusText}`,
+        );
+      }
+
+      const data = (await response.json()) as {
+        result?: unknown;
+        error?: { message: string };
+      };
+      if (data.error) {
+        throw new Error(data.error.message);
+      }
+      return data.result;
+    }
+
     // Local mode: call tool directly without AXL
     if (this.config.localMode && this.localRouter) {
       const toolName = this.resolveToolName(subtask);

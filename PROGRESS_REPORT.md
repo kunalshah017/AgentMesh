@@ -190,6 +190,23 @@
 - ⬜ Show 0G Storage rootHash + 0G Chain reputation tx in closing shot
 - ⬜ Upload to YouTube/Loom (unlisted), get shareable link
 
+### 4.5 Auto-ENS Subname Creation on Publish
+
+- ✅ `/ens/register` API endpoint on orchestrator (Sepolia ENS Registry setSubnodeRecord)
+- ✅ Server-side signing with owner private key (agent-mesh.eth parent domain)
+- ✅ Sets text records on subname (url, description, x402.price) via Public Resolver
+- ✅ Publish page calls `/ens/register` after successful on-chain AgentRegistry tx
+- ✅ Frontend shows ENS subname creation status (registering → success/error)
+- ✅ Input validation: label format, Ethereum address check
+
+### 4.6 External Tool Calling by URL
+
+- ✅ `AgentIdentity.endpoint` field added to shared types
+- ✅ On-chain registry reader extracts HTTP URLs from `axlPeerKey` field into `endpoint`
+- ✅ `callTool()` checks `tool.endpoint` first: if HTTP URL present, calls it via POST
+- ✅ MCP JSON-RPC format over HTTP with x402 payment header attached
+- ✅ Falls back to LOCAL_MODE (bundled functions) or AXL P2P if no endpoint
+
 ### 4.4 Documentation
 
 - ✅ README with architecture diagram + setup guide (comprehensive, submission-ready)

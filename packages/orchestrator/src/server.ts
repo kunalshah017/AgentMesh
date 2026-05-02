@@ -4,6 +4,7 @@ import express from "express";
 import { WebSocketServer, WebSocket } from "ws";
 import type { Server } from "http";
 import type { OrchestratorAgent } from "./agent.js";
+import { createEnsSubname } from "./ens-registrar.js";
 
 export function createServer(agent: OrchestratorAgent, port: number): Server {
   const app = express();
@@ -39,6 +40,53 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
       const task = await agent.processGoal(goal);
       res.json({ task });
     } catch (error) {
+      res.status(500).json({ error: String(error) });
+    }
+  });
+
+  // ENS subname registration — creates subname under agent-mesh.eth
+  app.post("/ens/register", async (req, res) => {
+    const { label, ownerAddress, endpoint, description, price } = req.body as {
+      label?: string;
+      ownerAddress?: string;
+      endpoint?: string;
+      description?: string;
+      price?: string;
+    };
+
+    if (!label || !ownerAddress) {
+      res.status(400).json({ error: "Missing 'label' or 'ownerAddress'" });
+      return;
+    }
+
+    // Validate label: lowercase alphanumeric + hyphens only
+    if (!/^[a-z0-9-]{3,}$/.test(label)) {
+      res
+        .status(400)
+        .json({
+          error:
+            "Invalid label: must be lowercase alphanumeric with hyphens, min 3 chars",
+        });
+      return;
+    }
+
+    // Validate ownerAddress is a valid Ethereum address
+    if (!/^0x[a-fA-F0-9]{40}$/.test(ownerAddress)) {
+      res.status(400).json({ error: "Invalid ownerAddress" });
+      return;
+    }
+
+    try {
+      const result = await createEnsSubname({
+        label,
+        ownerAddress,
+        endpoint,
+        description,
+        price,
+      });
+      res.json(result);
+    } catch (error) {
+      console.error("ENS registration failed:", error);
       res.status(500).json({ error: String(error) });
     }
   });

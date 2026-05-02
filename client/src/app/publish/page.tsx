@@ -10,6 +10,7 @@ import { sepolia } from "viem/chains";
 
 const ENS_REGISTRY = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" as const;
 const PARENT_DOMAIN = "agent-mesh.eth";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "";
 
 // Public client for ENS lookups on Sepolia
 const sepoliaClient = createPublicClient({
@@ -59,6 +60,8 @@ export default function PublishPage() {
     const [capabilities, setCapabilities] = useState("");
     const [price, setPrice] = useState("0.01");
     const [endpoint, setEndpoint] = useState("");
+    const [ensStatus2, setEnsStatus2] = useState<"idle" | "registering" | "success" | "error">("idle");
+    const [ensError, setEnsError] = useState("");
 
     const { status: ensStatus, ensName } = useEnsAvailability(name);
 
@@ -66,6 +69,42 @@ export default function PublishPage() {
     const { isLoading: isConfirming, isSuccess } = useWaitForTransactionReceipt({
         hash: txHash,
     });
+
+    // After on-chain registration succeeds, create ENS subname via orchestrator API
+    useEffect(() => {
+        if (!isSuccess || !address || !name || ensStatus2 !== "idle") return;
+
+        const registerEns = async () => {
+            if (!API_URL) {
+                // Skip ENS registration if no backend configured
+                setEnsStatus2("success");
+                return;
+            }
+            setEnsStatus2("registering");
+            try {
+                const res = await fetch(`${API_URL}/ens/register`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        label: name,
+                        ownerAddress: address,
+                        endpoint: endpoint || undefined,
+                        description: capabilities,
+                        price,
+                    }),
+                });
+                if (!res.ok) {
+                    const data = await res.json();
+                    throw new Error(data.error || `HTTP ${res.status}`);
+                }
+                setEnsStatus2("success");
+            } catch (err) {
+                setEnsStatus2("error");
+                setEnsError(String(err));
+            }
+        };
+        registerEns();
+    }, [isSuccess, address, name, endpoint, capabilities, price, ensStatus2]);
 
     const handleRegister = () => {
         if (!name || !capabilities || ensStatus === "taken") return;
@@ -209,9 +248,12 @@ export default function PublishPage() {
                             {/* Success */}
                             {isSuccess && txHash && (
                                 <div className="border-4 border-green-600 bg-green-100 p-4 mt-4">
-                                    <p className="font-black text-sm uppercase text-green-800">✅ Tool Registered!</p>
+                                    <p className="font-black text-sm uppercase text-green-800">✅ Tool Registered On-Chain!</p>
                                     <p className="text-xs text-green-700 mt-1">
-                                        ENS: <span className="font-mono font-bold">{name}.{PARENT_DOMAIN}</span> assigned to your wallet
+                                        ENS: <span className="font-mono font-bold">{name}.{PARENT_DOMAIN}</span>
+                                        {ensStatus2 === "registering" && " — Creating subname..."}
+                                        {ensStatus2 === "success" && " — ✅ Subname created!"}
+                                        {ensStatus2 === "error" && ` — ⚠️ Subname failed: ${ensError}`}
                                     </p>
                                     <p className="text-xs text-green-700 mt-1">
                                         Earnings wallet: <span className="font-mono">{address}</span>

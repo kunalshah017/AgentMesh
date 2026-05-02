@@ -5,6 +5,7 @@ export interface AgentIdentity {
   name: string;
   ensName: string; // e.g. "researcher.agentmesh.eth"
   axlPeerKey: string;
+  endpoint?: string; // HTTP/MCP endpoint URL for external tool calling
   capabilities: string[];
   pricePerCall: string; // USDC amount as string
 }
