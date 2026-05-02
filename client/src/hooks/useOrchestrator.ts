@@ -202,23 +202,27 @@ export function useOrchestrator(
   }, [addEvent, authenticateWs]);
 
   // Reconnect when wallet changes to re-auth
+  const prevWalletRef = useRef(walletAddress);
   useEffect(() => {
-    // Clear cached auth if wallet changed
-    const cached = localStorage.getItem(AUTH_CACHE_KEY);
-    if (cached) {
-      try {
-        const { walletAddress: cachedAddr } = JSON.parse(cached);
-        if (
-          walletAddress &&
-          cachedAddr?.toLowerCase() !== walletAddress.toLowerCase()
-        ) {
+    const prevWallet = prevWalletRef.current;
+    prevWalletRef.current = walletAddress;
+
+    // Only clear cache if wallet actually changed (not initial undefined)
+    if (walletAddress && walletAddress !== prevWallet) {
+      // New wallet connected — check if cache is for a different wallet
+      const cached = localStorage.getItem(AUTH_CACHE_KEY);
+      if (cached) {
+        try {
+          const { walletAddress: cachedAddr } = JSON.parse(cached);
+          if (cachedAddr?.toLowerCase() !== walletAddress.toLowerCase()) {
+            localStorage.removeItem(AUTH_CACHE_KEY);
+          }
+        } catch {
           localStorage.removeItem(AUTH_CACHE_KEY);
         }
-      } catch {
-        localStorage.removeItem(AUTH_CACHE_KEY);
       }
-    }
-    if (!walletAddress) {
+    } else if (!walletAddress && prevWallet) {
+      // Wallet was connected, now disconnected
       localStorage.removeItem(AUTH_CACHE_KEY);
     }
 
@@ -241,6 +245,18 @@ export function useOrchestrator(
         addEvent({
           type: "error",
           message: "Connect your wallet to use AgentMesh",
+        });
+        return;
+      }
+
+      if (!isAuthenticated) {
+        // Wallet connected but WS auth not complete — retry auth
+        if (wsRef.current?.readyState === WebSocket.OPEN) {
+          authenticateWs(wsRef.current);
+        }
+        addEvent({
+          type: "system",
+          message: "Authenticating... please try again in a moment.",
         });
         return;
       }
