@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Navbar } from "@/components/Navbar";
 import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useState } from "react";
 import { REGISTRY_ADDRESS, REGISTRY_ABI } from "@/config/contracts";
@@ -36,36 +36,7 @@ export default function PublishPage() {
     return (
         <div className="min-h-screen bg-neo-bg">
             {/* Nav */}
-            <nav className="border-b-4 border-black bg-neo-white px-6 py-4 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <Link href="/">
-                        <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1 cursor-pointer">
-                            <h1 className="text-xl font-black tracking-tighter uppercase text-black">
-                                AGENT<span className="text-neo-white">MESH</span>
-                            </h1>
-                        </div>
-                    </Link>
-                </div>
-                <div className="flex items-center gap-3">
-                    <Link href="/explore" className="text-xs font-black uppercase hover:text-neo-accent transition-colors">Explore</Link>
-                    <ConnectButton.Custom>
-                        {({ account, chain, openConnectModal, mounted }) => {
-                            if (!mounted || !account || !chain) {
-                                return (
-                                    <button onClick={openConnectModal} className="bg-neo-secondary border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
-                                        Connect Wallet
-                                    </button>
-                                );
-                            }
-                            return (
-                                <div className="bg-green-200 border-4 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000]">
-                                    {account.displayName}
-                                </div>
-                            );
-                        }}
-                    </ConnectButton.Custom>
-                </div>
-            </nav>
+            <Navbar />
 
             <main className="max-w-3xl mx-auto px-6 py-12">
                 <h2 className="text-3xl md:text-4xl font-black uppercase mb-2">Publish Your Tool</h2>

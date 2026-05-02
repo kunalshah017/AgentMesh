@@ -3,7 +3,7 @@
 import { ChatPanel } from "@/components/ChatPanel";
 import { ActivityFeed } from "@/components/ActivityFeed";
 import { NetworkGraph } from "@/components/NetworkGraph";
-import { Header } from "@/components/Header";
+import { Navbar } from "@/components/Navbar";
 import { PaymentTicker } from "@/components/PaymentTicker";
 import { ToolRegistry } from "@/components/ToolRegistry";
 import { useOrchestrator } from "@/hooks/useOrchestrator";
@@ -28,7 +28,7 @@ export default function Dashboard() {
 
     return (
         <div className="h-screen flex flex-col bg-neo-bg overflow-hidden">
-            <Header status={status} eventCount={events.length} />
+            <Navbar status={status} eventCount={events.length} />
             <PaymentTicker events={events} />
 
             <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-0 border-t-4 border-black min-h-0">

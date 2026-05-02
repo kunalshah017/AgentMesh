@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { Navbar } from "@/components/Navbar";
 
 const TOOLS = [
   { name: "orchestrator", ensName: "orchestrator.agentmesh.eth", icon: "🧠", role: "Brain", capabilities: ["task-planning", "tool-discovery", "orchestration"], color: "bg-red-100 border-red-400", type: "BRAIN" },
@@ -30,57 +30,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-neo-bg">
       {/* Nav */}
-      <nav className="border-b-4 border-black bg-neo-white px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1">
-            <h1 className="text-xl font-black tracking-tighter uppercase text-black">
-              AGENT<span className="text-neo-white">MESH</span>
-            </h1>
-          </div>
-          <span className="text-xs font-bold uppercase tracking-widest hidden md:inline">
-            Decentralized MCP Tool Marketplace
-          </span>
-        </div>
-        <div className="flex items-center gap-3">
-          <Link
-            href="/explore"
-            className="text-xs font-black uppercase hidden md:inline hover:text-neo-accent transition-colors"
-          >
-            Explore
-          </Link>
-          <Link
-            href="/publish"
-            className="text-xs font-black uppercase hidden md:inline hover:text-neo-accent transition-colors"
-          >
-            Publish
-          </Link>
-          <ConnectButton.Custom>
-            {({ account, chain, openConnectModal, mounted }) => {
-              if (!mounted || !account || !chain) {
-                return (
-                  <button
-                    onClick={openConnectModal}
-                    className="bg-neo-secondary border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-                  >
-                    Connect Wallet
-                  </button>
-                );
-              }
-              return (
-                <div className="bg-green-200 border-4 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000]">
-                  {account.displayName}
-                </div>
-              );
-            }}
-          </ConnectButton.Custom>
-          <Link
-            href="/dashboard"
-            className="bg-black text-white border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#666] hover:shadow-[2px_2px_0px_0px_#666] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-          >
-            Open Dashboard →
-          </Link>
-        </div>
-      </nav>
+      <Navbar />
 
       {/* Hero */}
       <section className="border-b-4 border-black px-6 py-16 md:py-24 bg-neo-white">
