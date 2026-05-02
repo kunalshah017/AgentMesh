@@ -74,8 +74,8 @@ export function useOrchestrator(
   const authenticateWs = useCallback(async (ws: WebSocket) => {
     if (!walletRef.current) return;
 
-    // Check sessionStorage for cached auth
-    const cached = sessionStorage.getItem(AUTH_CACHE_KEY);
+    // Check localStorage for cached auth (persists across tab closes)
+    const cached = localStorage.getItem(AUTH_CACHE_KEY);
     if (cached) {
       try {
         const {
@@ -98,7 +98,7 @@ export function useOrchestrator(
           return;
         }
       } catch {
-        sessionStorage.removeItem(AUTH_CACHE_KEY);
+        localStorage.removeItem(AUTH_CACHE_KEY);
       }
     }
 
@@ -110,8 +110,8 @@ export function useOrchestrator(
         const message = `Sign in to AgentMesh\n\nWallet: ${walletRef.current}\nNonce: ${nonce}\nTimestamp: ${new Date().toISOString()}`;
         const signature = await signMessageRef.current({ message });
 
-        // Cache for this session
-        sessionStorage.setItem(
+        // Cache for persistence across reloads/tabs
+        localStorage.setItem(
           AUTH_CACHE_KEY,
           JSON.stringify({
             walletAddress: walletRef.current,
@@ -131,7 +131,7 @@ export function useOrchestrator(
         );
       } catch {
         // User rejected signature — disconnect wallet
-        sessionStorage.removeItem(AUTH_CACHE_KEY);
+        localStorage.removeItem(AUTH_CACHE_KEY);
         onAuthRejectedRef.current?.();
       }
     } else {
@@ -204,7 +204,7 @@ export function useOrchestrator(
   // Reconnect when wallet changes to re-auth
   useEffect(() => {
     // Clear cached auth if wallet changed
-    const cached = sessionStorage.getItem(AUTH_CACHE_KEY);
+    const cached = localStorage.getItem(AUTH_CACHE_KEY);
     if (cached) {
       try {
         const { walletAddress: cachedAddr } = JSON.parse(cached);
@@ -212,14 +212,14 @@ export function useOrchestrator(
           walletAddress &&
           cachedAddr?.toLowerCase() !== walletAddress.toLowerCase()
         ) {
-          sessionStorage.removeItem(AUTH_CACHE_KEY);
+          localStorage.removeItem(AUTH_CACHE_KEY);
         }
       } catch {
-        sessionStorage.removeItem(AUTH_CACHE_KEY);
+        localStorage.removeItem(AUTH_CACHE_KEY);
       }
     }
     if (!walletAddress) {
-      sessionStorage.removeItem(AUTH_CACHE_KEY);
+      localStorage.removeItem(AUTH_CACHE_KEY);
     }
 
     if (walletAddress && wsRef.current?.readyState === WebSocket.OPEN) {

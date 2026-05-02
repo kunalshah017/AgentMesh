@@ -368,12 +368,14 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
   // --- Chat API (wallet-authenticated) ---
 
   // List chats for a wallet
-  app.get("/chats/:walletAddress", (req, res) => {
+  app.get("/chats/:walletAddress", async (req, res) => {
     const { walletAddress } = req.params;
     if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
       res.status(400).json({ error: "Invalid wallet address" });
       return;
     }
+    // Rehydrate from 0G if first access
+    await chatStore.loadWalletChats(walletAddress);
     const chats = chatStore.listChats(walletAddress);
     res.json({
       chats: chats.map((c) => ({
@@ -388,12 +390,14 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
   });
 
   // Get a specific chat with messages
-  app.get("/chats/:walletAddress/:chatId", (req, res) => {
+  app.get("/chats/:walletAddress/:chatId", async (req, res) => {
     const { walletAddress, chatId } = req.params;
     if (!walletAddress || !/^0x[a-fA-F0-9]{40}$/.test(walletAddress)) {
       res.status(400).json({ error: "Invalid wallet address" });
       return;
     }
+    // Rehydrate from 0G if first access
+    await chatStore.loadWalletChats(walletAddress);
     const chat = chatStore.getChat(walletAddress, chatId);
     if (!chat) {
       res.status(404).json({ error: "Chat not found" });

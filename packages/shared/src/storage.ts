@@ -29,13 +29,15 @@ export async function uploadToStorage(
   indexerUrl?: string,
   rpcUrl?: string,
   privateKey?: string,
+  customKey?: string,
 ): Promise<string> {
   const jsonData = JSON.stringify(data);
   const bytes = Buffer.from(jsonData, "utf8");
   const contentHash = ethers.keccak256(bytes);
 
-  // Generate a unique key for this upload
-  const key = `agentmesh/${Date.now()}-${contentHash.slice(2, 10)}`;
+  // Use custom key if provided, otherwise generate a unique one
+  const key =
+    customKey ?? `agentmesh/${Date.now()}-${contentHash.slice(2, 10)}`;
 
   const pk = privateKey ?? process.env.PRIVATE_KEY;
   if (!pk) {
