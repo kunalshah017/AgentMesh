@@ -280,47 +280,47 @@ _Last updated: May 2, 2026 — all core modules verified real. Zero mocks. demo.
 
 ### 🚨 CRITICAL GAPS (Will hurt at judging if not addressed)
 
-| Gap                                           | Plan Says                                                                        | Current State                                                       | Impact                                                                                             | Fix                                                                                            |
-| --------------------------------------------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
-| **x402 payments are fully mocked**            | "Autonomous Payments via x402 + Uniswap" — KEY differentiator vs SwarmNet        | Payment proofs generated, but no real USDC transfer                 | Judges will see "simulated" in logs — our #1 differentiator over SwarmNet becomes hollow           | Get Base Sepolia USDC, make at least 1 real x402 payment work for demo                         |
-| ~~Uniswap pay-with-any-token not integrated~~ | Plan says "Uses the pay-with-any-token skill from uniswap-ai"                    | ✅ FIXED — payWithAnyToken() uses Uniswap EXACT_OUTPUT quotes       | N/A — resolved. Verified: 0.000434 ETH → 1.00 USDC                                                | Done                                                                                           |
-| **ENS is local-only**                         | Plan says "Register agentmesh.eth on Sepolia, create subnames, set text records" | Local JS Map registry, no on-chain ENS                              | ENS sponsor won't be impressed by a local mock. Other teams (DoloX) are doing real ENS             | Get Sepolia ETH, register real subnames, show on-chain resolution in demo                      |
-| **No demo video**                             | \"Record demo video (2-4 min)\" — required by hackathon                            | demo.sh ready as recording base, video not yet captured                | Cannot submit without it. Period.                                                                  | Record with OBS using demo.sh output                                                           |
-| ~~Reputation not wired post-task~~            | "After each interaction, reputation is updated on-chain" — core feature #6       | ✅ FIXED — recordReputation() fires via KeeperHub after each subtask | N/A — resolved                                                                                     | Done                                                                                           |
+| Gap                                           | Plan Says                                                                        | Current State                                                        | Impact                                                                                   | Fix                                                                       |
+| --------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| **x402 payments are fully mocked**            | "Autonomous Payments via x402 + Uniswap" — KEY differentiator vs SwarmNet        | Payment proofs generated, but no real USDC transfer                  | Judges will see "simulated" in logs — our #1 differentiator over SwarmNet becomes hollow | Get Base Sepolia USDC, make at least 1 real x402 payment work for demo    |
+| ~~Uniswap pay-with-any-token not integrated~~ | Plan says "Uses the pay-with-any-token skill from uniswap-ai"                    | ✅ FIXED — payWithAnyToken() uses Uniswap EXACT_OUTPUT quotes        | N/A — resolved. Verified: 0.000434 ETH → 1.00 USDC                                       | Done                                                                      |
+| **ENS is local-only**                         | Plan says "Register agentmesh.eth on Sepolia, create subnames, set text records" | Local JS Map registry, no on-chain ENS                               | ENS sponsor won't be impressed by a local mock. Other teams (DoloX) are doing real ENS   | Get Sepolia ETH, register real subnames, show on-chain resolution in demo |
+| **No demo video**                             | \"Record demo video (2-4 min)\" — required by hackathon                          | demo.sh ready as recording base, video not yet captured              | Cannot submit without it. Period.                                                        | Record with OBS using demo.sh output                                      |
+| ~~Reputation not wired post-task~~            | "After each interaction, reputation is updated on-chain" — core feature #6       | ✅ FIXED — recordReputation() fires via KeeperHub after each subtask | N/A — resolved                                                                           | Done                                                                      |
 
 ### ⚠️ MODERATE GAPS (Should fix, won't block submission)
 
-| Gap                                     | Plan Says                                                            | Current State                                    | Fix                                                                                                   |
-| --------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
-| **KeeperHub on 0G Chain — DONE**        | "KeeperHub now supports 0G Chain — single execution path"            | ✅ KeeperHub executes recordTask on 0G Chain    | COMPLETE — reputation updates confirmed via demo.sh                                                   |
-| **0G Storage — DONE**                   | "0G Storage KV for agent state, Log for history"                     | ✅ Real SDK Batcher writes, verified in demo.sh  | COMPLETE — tx 0x374051..., 0x60f2b8... confirmed on-chain                                            |
-| **No live demo link**                   | Submission checklist says "Live demo link"                           | ✅ vercel.json added, frontend builds clean      | Deploy to Vercel before submission                                                                    |
-| **KeeperHub workflow execution mocked** | Plan says "Executor uses KeeperHub MCP for reliable execution"       | `execute_workflow` needs funded Turnkey wallet   | Fund the Turnkey wallet OR use `web3/write-contract` directly (which works without workflow setup)    |
-| **A2A protocol not demonstrated**       | Plan says "Uses A2A protocol for task delegation and status updates" | Only MCP routing shown                           | → Fixed in 4.5.9: Wire at least one A2A call or document as supported-but-MCP-preferred               |
-| **Open marketplace DONE**               | "Open marketplace where anyone can register tools"                   | ✅ Runtime discovery from on-chain AgentRegistry, gas-optimizer demo registered | COMPLETE: register-tool.ts + orchestrator refreshRegistry() + 5 agents live                           |
-| **Tool Provider arch invisible**        | "1 brain + N dumb tools — simpler, cheaper"                          | Works this way but nothing in UI shows it        | → Fixed in 4.5.6: Dashboard indicators, brain vs wrench icons, resource usage display                 |
+| Gap                                     | Plan Says                                                            | Current State                                                                   | Fix                                                                                                |
+| --------------------------------------- | -------------------------------------------------------------------- | ------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| **KeeperHub on 0G Chain — DONE**        | "KeeperHub now supports 0G Chain — single execution path"            | ✅ KeeperHub executes recordTask on 0G Chain                                    | COMPLETE — reputation updates confirmed via demo.sh                                                |
+| **0G Storage — DONE**                   | "0G Storage KV for agent state, Log for history"                     | ✅ Real SDK Batcher writes, verified in demo.sh                                 | COMPLETE — tx 0x374051..., 0x60f2b8... confirmed on-chain                                          |
+| **No live demo link**                   | Submission checklist says "Live demo link"                           | ✅ vercel.json added, frontend builds clean                                     | Deploy to Vercel before submission                                                                 |
+| **KeeperHub workflow execution mocked** | Plan says "Executor uses KeeperHub MCP for reliable execution"       | `execute_workflow` needs funded Turnkey wallet                                  | Fund the Turnkey wallet OR use `web3/write-contract` directly (which works without workflow setup) |
+| **A2A protocol not demonstrated**       | Plan says "Uses A2A protocol for task delegation and status updates" | Only MCP routing shown                                                          | → Fixed in 4.5.9: Wire at least one A2A call or document as supported-but-MCP-preferred            |
+| **Open marketplace DONE**               | "Open marketplace where anyone can register tools"                   | ✅ Runtime discovery from on-chain AgentRegistry, gas-optimizer demo registered | COMPLETE: register-tool.ts + orchestrator refreshRegistry() + 5 agents live                        |
+| **Tool Provider arch invisible**        | "1 brain + N dumb tools — simpler, cheaper"                          | Works this way but nothing in UI shows it                                       | → Fixed in 4.5.6: Dashboard indicators, brain vs wrench icons, resource usage display              |
 
 ### ✅ COVERED WELL (No action needed)
 
-| Feature                                   | Status                                    |
-| ----------------------------------------- | ----------------------------------------- |
-| 0G Compute (real LLM inference)           | Fully live, working                       |
-| AXL 4-node mesh with MCP routing          | Fully live, verified                      |
-| Uniswap Trading API quotes                | Fully live, real data                     |
-| Uniswap pay-with-any-token                | Fully live, 0.000434 ETH → 1.00 USDC     |
-| KeeperHub MCP session                     | Fully live                                |
-| KeeperHub on 0G Chain (reputation)        | Fully live, verified in demo.sh           |
-| 0G Storage KV writes                      | Fully live, SDK Batcher + verified tx     |
-| DeFiLlama / CoinGecko data               | Fully live                                |
-| x402 EIP-712 payment proofs              | Fully live, signTypedData + recovery      |
-| On-chain AgentRegistry (5 agents)         | Fully live, runtime discovery             |
-| Open Marketplace (register + discover)    | Fully live, gas-optimizer demo            |
-| Frontend dashboard + chat + activity feed | Working                                   |
-| Smart contracts deployed on 0G Chain      | Working                                   |
-| FEEDBACK files (3 sponsors)               | Done (Uniswap, Gensyn, KeeperHub)        |
-| README + architecture docs                | Done                                      |
-| Git history with incremental commits      | Done (15+ commits)                        |
-| demo.sh verification script               | Done, 6/6 steps pass live                 |
+| Feature                                   | Status                                |
+| ----------------------------------------- | ------------------------------------- |
+| 0G Compute (real LLM inference)           | Fully live, working                   |
+| AXL 4-node mesh with MCP routing          | Fully live, verified                  |
+| Uniswap Trading API quotes                | Fully live, real data                 |
+| Uniswap pay-with-any-token                | Fully live, 0.000434 ETH → 1.00 USDC  |
+| KeeperHub MCP session                     | Fully live                            |
+| KeeperHub on 0G Chain (reputation)        | Fully live, verified in demo.sh       |
+| 0G Storage KV writes                      | Fully live, SDK Batcher + verified tx |
+| DeFiLlama / CoinGecko data                | Fully live                            |
+| x402 EIP-712 payment proofs               | Fully live, signTypedData + recovery  |
+| On-chain AgentRegistry (5 agents)         | Fully live, runtime discovery         |
+| Open Marketplace (register + discover)    | Fully live, gas-optimizer demo        |
+| Frontend dashboard + chat + activity feed | Working                               |
+| Smart contracts deployed on 0G Chain      | Working                               |
+| FEEDBACK files (3 sponsors)               | Done (Uniswap, Gensyn, KeeperHub)     |
+| README + architecture docs                | Done                                  |
+| Git history with incremental commits      | Done (15+ commits)                    |
+| demo.sh verification script               | Done, 6/6 steps pass live             |
 
 ### 🔑 COMPETITIVE DIFFERENTIATORS — Must Be Visible in Demo
 

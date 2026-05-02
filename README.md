@@ -4,6 +4,8 @@
 
 Built for **ETHGlobal Open Agents Hackathon 2026**
 
+**Live Dashboard:** https://agentmesh-app.vercel.app
+
 ---
 
 ## What It Does
@@ -220,9 +222,49 @@ We believe in transparency. Here's what's real and what has constraints:
 
 We filed detailed integration feedback for sponsors:
 
-- [FEEDBACK.md](./FEEDBACK.md) — Uniswap Trading API
+- [FEEDBACK-UNISWAP.md](./FEEDBACK-UNISWAP.md) — Uniswap Trading API
 - [FEEDBACK-GENSYN.md](./FEEDBACK-GENSYN.md) — Gensyn AXL P2P
 - [FEEDBACK-KEEPERHUB.md](./FEEDBACK-KEEPERHUB.md) — KeeperHub MCP
+
+---
+
+## How to Publish Your Own Tool
+
+AgentMesh is an **open marketplace** — anyone can deploy a tool and start earning. Here's how:
+
+### 1. Build an MCP Service
+
+Create a lightweight service that exposes tool capabilities via MCP protocol:
+
+```typescript
+// my-tool/src/index.ts
+export async function myTool(input: string): Promise<{ result: string }> {
+  // Your logic here — no LLM needed, just input → output
+  return { result: "..." };
+}
+```
+
+### 2. Register On-Chain
+
+Register your tool on the AgentRegistry (0G Chain testnet):
+
+```bash
+bun run packages/contracts/scripts/register-tool.ts -- \
+  --name "my-tool.agentmesh.eth" \
+  --key "<your-ed25519-axl-key>" \
+  --capabilities "my-capability,another-skill" \
+  --price "0.01"
+```
+
+### 3. Get Discovered & Earn
+
+Once registered, the Orchestrator automatically discovers your tool when a user task matches your capabilities. You earn USDC per call via x402 payments.
+
+```
+User task → Orchestrator queries registry → Finds YOUR tool → Calls it → Pays you
+```
+
+No GPU required. No approval process. Deploy, register, earn.
 
 ---
 

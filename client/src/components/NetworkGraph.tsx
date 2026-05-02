@@ -1,16 +1,18 @@
 "use client";
 
 const NODES = [
-  { id: "orchestrator", label: "ORCHESTRATOR", x: 50, y: 22, color: "#FF6B6B", role: "Brain (0G Compute)", icon: "🧠", sponsor: "0G" },
-  { id: "researcher", label: "RESEARCHER", x: 16, y: 72, color: "#00aaff", role: "DeFi Scanner", icon: "🔍", sponsor: "Uniswap" },
-  { id: "risk-analyst", label: "RISK ANALYST", x: 50, y: 88, color: "#FFD93D", role: "Risk Assessment", icon: "⚠️", sponsor: "0G" },
-  { id: "executor", label: "EXECUTOR", x: 84, y: 72, color: "#C4B5FD", role: "Onchain Execution", icon: "🔧", sponsor: "KeeperHub" },
+  { id: "orchestrator", label: "ORCHESTRATOR", x: 50, y: 18, color: "#FF6B6B", role: "Brain (0G Compute)", icon: "🧠", sponsor: "0G" },
+  { id: "researcher", label: "RESEARCHER", x: 14, y: 55, color: "#00aaff", role: "DeFi Scanner", icon: "🔍", sponsor: "Uniswap" },
+  { id: "risk-analyst", label: "RISK ANALYST", x: 38, y: 85, color: "#FFD93D", role: "Risk Assessment", icon: "⚠️", sponsor: "0G" },
+  { id: "executor", label: "EXECUTOR", x: 86, y: 55, color: "#C4B5FD", role: "Onchain Execution", icon: "🔧", sponsor: "KeeperHub" },
+  { id: "gas-optimizer", label: "GAS OPTIMIZER", x: 62, y: 85, color: "#6EE7B7", role: "Fee Prediction", icon: "⛽", sponsor: "NEW" },
 ];
 
 const CONNECTIONS = [
   { from: "orchestrator", to: "researcher" },
   { from: "orchestrator", to: "risk-analyst" },
   { from: "orchestrator", to: "executor" },
+  { from: "orchestrator", to: "gas-optimizer" },
 ];
 
 interface NetworkGraphProps {

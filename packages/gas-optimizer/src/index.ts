@@ -23,7 +23,8 @@ interface GasReport {
  * Uses real Ethereum RPC to fetch base fee and pending block data.
  */
 export async function predictGas(network?: string): Promise<GasReport> {
-  const rpcUrl = process.env.ETH_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
+  const rpcUrl =
+    process.env.ETH_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
 
   console.log(`⛽ Predicting gas prices on ${network ?? "ethereum"}...`);
 
@@ -56,7 +57,8 @@ export async function predictGas(network?: string): Promise<GasReport> {
   const blockNumber = parseInt(block.number, 16);
   const baseFeeWei = BigInt(block.baseFeePerGas);
   const baseFeeGwei = Number(baseFeeWei) / 1e9;
-  const gasUsedRatio = parseInt(block.gasUsed, 16) / parseInt(block.gasLimit, 16);
+  const gasUsedRatio =
+    parseInt(block.gasUsed, 16) / parseInt(block.gasLimit, 16);
 
   // Also fetch fee history for percentile-based predictions
   const feeHistoryResponse = await fetch(rpcUrl, {
@@ -77,7 +79,8 @@ export async function predictGas(network?: string): Promise<GasReport> {
     };
     if (feeData.result?.reward?.length > 0) {
       // Average the priority fees across recent blocks
-      const lastRewards = feeData.result.reward[feeData.result.reward.length - 1];
+      const lastRewards =
+        feeData.result.reward[feeData.result.reward.length - 1];
       priorityFees = lastRewards.map((r) => Number(BigInt(r)) / 1e9);
     }
   }
@@ -124,7 +127,9 @@ export async function predictGas(network?: string): Promise<GasReport> {
     recommendation = "Low congestion. 'slow' speed will confirm quickly.";
   }
 
-  console.log(`   ✅ Gas prediction: base=${baseFeeGwei.toFixed(2)} Gwei, block=${blockNumber}`);
+  console.log(
+    `   ✅ Gas prediction: base=${baseFeeGwei.toFixed(2)} Gwei, block=${blockNumber}`,
+  );
 
   return {
     network: network ?? "ethereum",

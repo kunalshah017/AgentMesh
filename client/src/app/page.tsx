@@ -5,6 +5,7 @@ import { ActivityFeed } from "@/components/ActivityFeed";
 import { NetworkGraph } from "@/components/NetworkGraph";
 import { Header } from "@/components/Header";
 import { PaymentTicker } from "@/components/PaymentTicker";
+import { ToolRegistry } from "@/components/ToolRegistry";
 import { useOrchestrator } from "@/hooks/useOrchestrator";
 
 export default function Home() {
@@ -32,21 +33,26 @@ export default function Home() {
 
       <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-0 border-t-4 border-black min-h-0">
         {/* Chat Panel — Left */}
-        <section className="md:col-span-5 border-r-0 md:border-r-4 border-black flex flex-col min-h-0">
+        <section className="md:col-span-4 border-r-0 md:border-r-4 border-black flex flex-col min-h-0">
           <ChatPanel events={events} onSendGoal={sendGoal} status={status} />
         </section>
 
-        {/* Right Side — Network + Activity Feed */}
-        <section className="md:col-span-7 flex flex-col min-h-0">
-          {/* Network Graph — Top Right */}
+        {/* Center — Network + Activity Feed */}
+        <section className="md:col-span-5 flex flex-col min-h-0 border-r-0 md:border-r-4 border-black">
+          {/* Network Graph — Top */}
           <div className="flex-1 border-b-4 border-black min-h-0 overflow-hidden">
             <NetworkGraph activeNodes={activeNodes} />
           </div>
 
-          {/* Activity Feed — Bottom Right */}
-          <div className="h-[280px] shrink-0 overflow-y-auto">
+          {/* Activity Feed — Bottom */}
+          <div className="h-[240px] shrink-0 overflow-y-auto">
             <ActivityFeed events={events} />
           </div>
+        </section>
+
+        {/* Right — Tool Registry */}
+        <section className="md:col-span-3 flex flex-col min-h-0">
+          <ToolRegistry />
         </section>
       </main>
     </div>

@@ -12,7 +12,9 @@ app.use(express.json());
 // x402 payment gate — charges per call
 app.use(
   x402PaymentGate({
-    paymentAddress: process.env.PAYMENT_ADDRESS ?? "0x4F3CBe03724a12C334B4bC751F53AA3f546Cd501",
+    paymentAddress:
+      process.env.PAYMENT_ADDRESS ??
+      "0x4F3CBe03724a12C334B4bC751F53AA3f546Cd501",
     enforce: false, // Demo mode
   }),
 );
@@ -29,11 +31,16 @@ app.post("/mcp", (req, res) => {
         tools: [
           {
             name: "predict-gas",
-            description: "Predict optimal gas prices for Ethereum transactions using real network data",
+            description:
+              "Predict optimal gas prices for Ethereum transactions using real network data",
             inputSchema: {
               type: "object",
               properties: {
-                network: { type: "string", description: "Network name (ethereum, base, arbitrum)", default: "ethereum" },
+                network: {
+                  type: "string",
+                  description: "Network name (ethereum, base, arbitrum)",
+                  default: "ethereum",
+                },
               },
             },
           },
@@ -51,23 +58,45 @@ app.post("/mcp", (req, res) => {
       const args = params?.arguments ?? {};
       predictGas(args.network)
         .then((result) => {
-          res.json({ jsonrpc: "2.0", id: body.id, result: { content: [{ type: "text", text: JSON.stringify(result, null, 2) }] } });
+          res.json({
+            jsonrpc: "2.0",
+            id: body.id,
+            result: {
+              content: [
+                { type: "text", text: JSON.stringify(result, null, 2) },
+              ],
+            },
+          });
         })
         .catch((err) => {
-          res.json({ jsonrpc: "2.0", id: body.id, error: { code: -32000, message: String(err) } });
+          res.json({
+            jsonrpc: "2.0",
+            id: body.id,
+            error: { code: -32000, message: String(err) },
+          });
         });
       return;
     }
 
-    res.json({ jsonrpc: "2.0", id: body.id, error: { code: -32601, message: `Unknown tool: ${toolName}` } });
+    res.json({
+      jsonrpc: "2.0",
+      id: body.id,
+      error: { code: -32601, message: `Unknown tool: ${toolName}` },
+    });
     return;
   }
 
-  res.json({ jsonrpc: "2.0", id: body.id, error: { code: -32601, message: "Method not found" } });
+  res.json({
+    jsonrpc: "2.0",
+    id: body.id,
+    error: { code: -32601, message: "Method not found" },
+  });
 });
 
 app.listen(PORT, () => {
   console.log(`⛽ Gas Optimizer MCP server running on port ${PORT}`);
   console.log(`   Tools: predict-gas`);
-  console.log(`   Register on marketplace: bun run packages/contracts/scripts/register-tool.ts`);
+  console.log(
+    `   Register on marketplace: bun run packages/contracts/scripts/register-tool.ts`,
+  );
 });
