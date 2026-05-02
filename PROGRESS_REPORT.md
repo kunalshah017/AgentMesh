@@ -62,11 +62,11 @@
 
 ### 1.5 ENS Setup
 
-- ⬜ Get Sepolia ETH from faucet
-- ⬜ Register agentmesh.eth on Sepolia
-- ⬜ Create subnames: orchestrator, researcher, analyst, executor
-- ⬜ Set text records (capabilities, axl-key, price-per-task)
-- ⬜ Verify ENS resolution with viem
+- ✅ Get Sepolia ETH from faucet
+- ✅ Register agent-mesh.eth on Sepolia (tx 0xafb65e3, block 10776502)
+- ✅ Create subnames: researcher, executor, analyst, gas-optimizer
+- ✅ Set text records (description, x402.price, url) on all subnames
+- ✅ Verify ENS resolution with viem (discoverAgentsFromENS working)
 
 ---
 
@@ -76,6 +76,7 @@
 
 - ✅ Task planner: goal → subtask decomposition via 0G Compute
 - ✅ Tool discovery: query ENS for tools by capability
+- ✅ Dual-source discovery: 0G Chain AgentRegistry + Sepolia ENS text records
 - ✅ AXL MCP client: call remote tools via P2P (real peer keys wired)
 - ✅ Event system: SSE stream to dashboard
 - ✅ WebSocket server for real-time dashboard communication
@@ -165,6 +166,8 @@
 - ✅ `demo.sh` verification script — 6 live steps (registry, gas, balance, x402, storage, reputation)
 - ✅ Verified all 6 demo steps pass with real on-chain/mainnet data
 - ✅ Gas-optimizer package: real ETH gas prediction via eth_feeHistory (block-level data)
+- ✅ Dashboard demo mode: simulates full orchestration lifecycle when backend unavailable
+- ✅ Demo mode shows ENS discovery → tool selection → x402 payment → execution → reputation
 - ⬜ Pre-warm all AXL nodes for demo video recording
 - ⬜ Test full demo flow 5+ times end-to-end with AXL mesh
 
@@ -235,16 +238,16 @@
 
 ## Sponsor Integration Checklist
 
-| Sponsor       | Layer       | Status | What We Use                                                                    |
-| ------------- | ----------- | ------ | ------------------------------------------------------------------------------ |
-| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE              |
-| **0G**        | Storage     | ✅     | Agent memory + conversation logs (real KV writes via SDK Batcher, tx verified) |
-| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 5 agents registered on-chain       |
-| **Gensyn**    | AXL         | ✅     | 4-node P2P mesh, MCP routing verified, Python routers running                  |
-| **Uniswap**   | Trading API | ✅     | LIVE quotes (1 ETH = 2229 USDC), real Trading API integration                  |
-| **KeeperHub** | MCP         | ✅     | LIVE session-based MCP (ai_generate_workflow, execute_workflow working)        |
-| **ENS**       | Identity    | ✅     | Local registry + resolution code (Sepolia registration not needed for demo)    |
-| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                          |
+| Sponsor       | Layer       | Status | What We Use                                                                                                |
+| ------------- | ----------- | ------ | ---------------------------------------------------------------------------------------------------------- |
+| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE                                          |
+| **0G**        | Storage     | ✅     | Agent memory + conversation logs (real KV writes via SDK Batcher, tx verified)                             |
+| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 5 agents registered on-chain                                   |
+| **Gensyn**    | AXL         | ✅     | 4-node P2P mesh, MCP routing verified, Python routers running                                              |
+| **Uniswap**   | Trading API | ✅     | LIVE quotes (1 ETH = 2229 USDC), real Trading API integration                                              |
+| **KeeperHub** | MCP         | ✅     | LIVE session-based MCP (ai_generate_workflow, execute_workflow working)                                    |
+| **ENS**       | Identity    | ✅     | agent-mesh.eth registered on Sepolia, 4 subnames with text records, dual-source discovery (ENS + on-chain) |
+| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                                                      |
 
 ---
 
@@ -264,17 +267,17 @@
 | 0G Compute               | ✅     | 0g-compute-cli get-secret        |
 | Uniswap                  | ✅     | developers.uniswap.org/dashboard |
 | KeeperHub                | ✅     | app.keeperhub.com                |
-| Alchemy/Infura (Sepolia) | ⬜     | For ENS resolution               |
+| Alchemy/Infura (Sepolia) | ✅     | publicnode.com (free, no key)    |
 
 ---
 
 ## Testnet Tokens Needed
 
-| Token             | Network          | Status | Faucet                   |
-| ----------------- | ---------------- | ------ | ------------------------ |
-| OG tokens         | 0G Testnet       | ✅     | faucet.0g.ai (6.1 OG)    |
-| Sepolia ETH       | Ethereum Sepolia | ⬜     | ethglobal.com/faucet     |
-| Base Sepolia USDC | Base Sepolia     | ⬜     | For x402 payment testing |
+| Token             | Network          | Status | Faucet                |
+| ----------------- | ---------------- | ------ | --------------------- |
+| OG tokens         | 0G Testnet       | ✅     | faucet.0g.ai (6.1 OG) |
+| Sepolia ETH       | Ethereum Sepolia | ✅     | ethglobal.com/faucet  |
+| Base Sepolia USDC | Base Sepolia     | ✅     | ~19.88 USDC funded    |
 
 ---
 
