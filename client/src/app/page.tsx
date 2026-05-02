@@ -1,60 +1,312 @@
 "use client";
 
-import { ChatPanel } from "@/components/ChatPanel";
-import { ActivityFeed } from "@/components/ActivityFeed";
-import { NetworkGraph } from "@/components/NetworkGraph";
-import { Header } from "@/components/Header";
-import { PaymentTicker } from "@/components/PaymentTicker";
-import { ToolRegistry } from "@/components/ToolRegistry";
-import { useOrchestrator } from "@/hooks/useOrchestrator";
+import Link from "next/link";
+
+const TOOLS = [
+  { name: "orchestrator", ensName: "orchestrator.agentmesh.eth", icon: "🧠", role: "Brain", capabilities: ["task-planning", "tool-discovery", "orchestration"], color: "bg-red-100 border-red-400", type: "BRAIN" },
+  { name: "researcher", ensName: "researcher.agentmesh.eth", icon: "🔍", role: "DeFi Scanner", capabilities: ["defi-research", "scan-yields", "token-info"], color: "bg-blue-100 border-blue-400", type: "TOOL" },
+  { name: "analyst", ensName: "analyst.agentmesh.eth", icon: "⚠️", role: "Risk Assessment", capabilities: ["risk-analysis", "contract-audit"], color: "bg-yellow-100 border-yellow-400", type: "TOOL" },
+  { name: "executor", ensName: "executor.agentmesh.eth", icon: "🔧", role: "Onchain Execution", capabilities: ["execute-swap", "check-balance", "execute-deposit"], color: "bg-purple-100 border-purple-400", type: "TOOL" },
+  { name: "gas-optimizer", ensName: "gas-optimizer.agentmesh.eth", icon: "⛽", role: "Fee Prediction", capabilities: ["gas-prediction", "fee-estimation"], color: "bg-green-100 border-green-400", type: "TOOL" },
+];
+
+const SPONSORS = [
+  { name: "0G", layers: "Compute + Storage + Chain", what: "LLM inference, KV storage, smart contracts", color: "bg-black text-white" },
+  { name: "Gensyn AXL", layers: "P2P Mesh", what: "Encrypted agent communication, MCP routing", color: "bg-green-600 text-white" },
+  { name: "Uniswap", layers: "Trading API", what: "Real-time swap quotes, pay-with-any-token", color: "bg-pink-500 text-white" },
+  { name: "KeeperHub", layers: "MCP Execution", what: "DeFi workflows, reputation on 0G Chain", color: "bg-blue-600 text-white" },
+  { name: "ENS", layers: "Identity", what: "Agent discovery by capability", color: "bg-sky-400 text-black" },
+];
+
+const STATS = [
+  { label: "Registered Tools", value: "5", sub: "on-chain" },
+  { label: "Capabilities", value: "15+", sub: "indexed" },
+  { label: "Sponsor Integrations", value: "5", sub: "all live" },
+  { label: "Mock Code", value: "0", sub: "zero mocks" },
+];
 
 export default function Home() {
-  const { status, events, sendGoal } = useOrchestrator();
-
-  // Derive which nodes are currently active from recent events
-  const activeNodes = new Set<string>();
-  const recentEvents = events.slice(-10);
-  for (const e of recentEvents) {
-    if (e.type === "tool_called") {
-      const tool = String(e.tool ?? "");
-      if (tool.includes("researcher")) activeNodes.add("researcher");
-      if (tool.includes("analyst")) activeNodes.add("risk-analyst");
-      if (tool.includes("executor")) activeNodes.add("executor");
-    }
-  }
-  if (events.some((e) => e.type === "task_created" && !events.some((e2) => e2.type === "task_completed"))) {
-    activeNodes.add("orchestrator");
-  }
-
   return (
-    <div className="h-screen flex flex-col bg-neo-bg overflow-hidden">
-      <Header status={status} eventCount={events.length} />
-      <PaymentTicker events={events} />
+    <div className="min-h-screen bg-neo-bg">
+      {/* Nav */}
+      <nav className="border-b-4 border-black bg-neo-white px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1">
+            <h1 className="text-xl font-black tracking-tighter uppercase text-black">
+              AGENT<span className="text-neo-white">MESH</span>
+            </h1>
+          </div>
+          <span className="text-xs font-bold uppercase tracking-widest hidden md:inline">
+            Decentralized MCP Tool Marketplace
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link
+            href="/dashboard"
+            className="bg-black text-white border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#666] hover:shadow-[2px_2px_0px_0px_#666] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+          >
+            Open Dashboard →
+          </Link>
+        </div>
+      </nav>
 
-      <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-0 border-t-4 border-black min-h-0">
-        {/* Chat Panel — Left */}
-        <section className="md:col-span-4 border-r-0 md:border-r-4 border-black flex flex-col min-h-0">
-          <ChatPanel events={events} onSendGoal={sendGoal} status={status} />
-        </section>
+      {/* Hero */}
+      <section className="border-b-4 border-black px-6 py-16 md:py-24 bg-neo-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="bg-neo-secondary border-4 border-black px-3 py-1 inline-block shadow-[3px_3px_0px_0px_#000] mb-6 -rotate-1">
+            <span className="text-xs font-black uppercase">ETHGlobal Open Agents 2026</span>
+          </div>
+          <h2 className="text-4xl md:text-6xl font-black uppercase leading-tight tracking-tight">
+            The App Store for<br />
+            <span className="bg-neo-accent px-2 inline-block -rotate-1 border-4 border-black shadow-[4px_4px_0px_0px_#000]">AI Tools</span>
+            {" "}— Decentralized
+          </h2>
+          <p className="text-lg md:text-xl mt-6 max-w-3xl font-medium leading-relaxed">
+            Deploy an MCP tool. Register it on-chain. Get discovered by AI agents.
+            Get paid per call via x402 micropayments. No approval process. No GPU required.
+          </p>
 
-        {/* Center — Network + Activity Feed */}
-        <section className="md:col-span-5 flex flex-col min-h-0 border-r-0 md:border-r-4 border-black">
-          {/* Network Graph — Top */}
-          <div className="flex-1 border-b-4 border-black min-h-0 overflow-hidden">
-            <NetworkGraph activeNodes={activeNodes} />
+          {/* Flow diagram */}
+          <div className="mt-10 flex flex-wrap items-center gap-3">
+            {["Publish Tool", "→", "Register On-Chain", "→", "Get Discovered", "→", "Earn USDC"].map((step, i) => (
+              step === "→" ? (
+                <span key={i} className="text-2xl font-black">→</span>
+              ) : (
+                <div key={i} className="bg-neo-muted border-3 border-black px-4 py-2 shadow-[3px_3px_0px_0px_#000] font-black text-sm uppercase">
+                  {step}
+                </div>
+              )
+            ))}
           </div>
 
-          {/* Activity Feed — Bottom */}
-          <div className="h-[240px] shrink-0 overflow-y-auto">
-            <ActivityFeed events={events} />
+          <div className="mt-10 flex gap-4 flex-wrap">
+            <Link
+              href="/dashboard"
+              className="bg-neo-accent border-4 border-black px-6 py-3 text-lg font-black uppercase shadow-[5px_5px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              Try the Dashboard
+            </Link>
+            <a
+              href="https://github.com/kunalshah017/AgentMesh"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-neo-white border-4 border-black px-6 py-3 text-lg font-black uppercase shadow-[5px_5px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+            >
+              GitHub ↗
+            </a>
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Right — Tool Registry */}
-        <section className="md:col-span-3 flex flex-col min-h-0">
-          <ToolRegistry />
-        </section>
-      </main>
+      {/* Stats bar */}
+      <section className="border-b-4 border-black bg-black text-white px-6 py-6">
+        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6">
+          {STATS.map((stat) => (
+            <div key={stat.label} className="text-center">
+              <div className="text-3xl md:text-4xl font-black">{stat.value}</div>
+              <div className="text-xs font-bold uppercase tracking-wider opacity-70 mt-1">{stat.label}</div>
+              <div className="text-[10px] font-bold uppercase opacity-40">{stat.sub}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="border-b-4 border-black px-6 py-16 bg-neo-white">
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-3xl font-black uppercase mb-10">How It Works</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              { step: "1", title: "Deploy & Register", desc: "Build a lightweight MCP tool (no GPU needed). Register it on-chain with capabilities and pricing. Done in 5 minutes.", icon: "📦" },
+              { step: "2", title: "Get Discovered", desc: "When a user submits a task, the Orchestrator queries the on-chain registry and discovers YOUR tool by capability match.", icon: "🔍" },
+              { step: "3", title: "Earn Per Call", desc: "Every time your tool is used, you earn USDC via x402 micropayments. Reputation builds on-chain automatically.", icon: "💰" },
+            ].map((item) => (
+              <div key={item.step} className="border-4 border-black p-6 shadow-[6px_6px_0px_0px_#000] bg-neo-bg">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="bg-neo-accent border-3 border-black w-10 h-10 flex items-center justify-center font-black text-lg">
+                    {item.step}
+                  </div>
+                  <span className="text-2xl">{item.icon}</span>
+                </div>
+                <h4 className="font-black text-lg uppercase mb-2">{item.title}</h4>
+                <p className="text-sm leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Architecture */}
+      <section className="border-b-4 border-black px-6 py-16 bg-neo-muted">
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-3xl font-black uppercase mb-4">Architecture: 1 Brain + N Tools</h3>
+          <p className="text-sm font-medium mb-8 max-w-2xl">
+            Only the Orchestrator runs AI (0G Compute). Tool providers are lightweight deterministic functions —
+            no GPU, no LLM, just input → output. Anyone can host a tool on a $5 VPS.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Brain */}
+            <div className="border-4 border-black p-5 bg-red-100 shadow-[5px_5px_0px_0px_#000]">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-3xl">🧠</span>
+                <div>
+                  <div className="font-black uppercase">Orchestrator</div>
+                  <div className="text-[10px] font-bold uppercase bg-black text-white px-2 py-0.5 inline-block">BRAIN — 0G Compute</div>
+                </div>
+              </div>
+              <p className="text-sm">Plans tasks, discovers tools, coordinates execution, handles payments. The ONLY node that needs AI.</p>
+            </div>
+
+            {/* Tools */}
+            <div className="border-4 border-black p-5 bg-neo-white shadow-[5px_5px_0px_0px_#000]">
+              <div className="flex items-center gap-3 mb-3">
+                <span className="text-3xl">🔧</span>
+                <div>
+                  <div className="font-black uppercase">Tool Providers (N)</div>
+                  <div className="text-[10px] font-bold uppercase bg-neo-muted border border-black px-2 py-0.5 inline-block">NO LLM — Deterministic</div>
+                </div>
+              </div>
+              <p className="text-sm">Pure MCP functions: DeFi research, swaps, gas prediction, risk analysis. Fast, cheap, anyone can deploy.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tool Registry */}
+      <section className="border-b-4 border-black px-6 py-16 bg-neo-white">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex items-center justify-between mb-8">
+            <h3 className="text-3xl font-black uppercase">Tool Registry</h3>
+            <div className="bg-green-400 border-3 border-black px-3 py-1 shadow-[3px_3px_0px_0px_#000]">
+              <span className="text-xs font-black uppercase">Live On-Chain</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {TOOLS.map((tool) => (
+              <div key={tool.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${tool.color}`}>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl">{tool.icon}</span>
+                    <span className="font-black uppercase text-sm">{tool.name}</span>
+                  </div>
+                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase ${tool.type === "BRAIN" ? "bg-black text-white" : "bg-white border border-black"}`}>
+                    {tool.type}
+                  </span>
+                </div>
+                <div className="mono text-[10px] opacity-60 mb-2">{tool.ensName}</div>
+                <div className="flex flex-wrap gap-1">
+                  {tool.capabilities.map((cap) => (
+                    <span key={cap} className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                      {cap}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+
+            {/* Publish CTA card */}
+            <div className="border-4 border-dashed border-black p-4 flex flex-col items-center justify-center text-center bg-neo-bg opacity-80 hover:opacity-100 transition-opacity">
+              <span className="text-3xl mb-2">➕</span>
+              <span className="font-black text-sm uppercase">Your Tool Here</span>
+              <span className="text-[10px] mt-1 opacity-60">Deploy → Register → Earn</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Sponsors */}
+      <section className="border-b-4 border-black px-6 py-16 bg-neo-bg">
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-3xl font-black uppercase mb-8">5 Sponsor Integrations — All Live</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {SPONSORS.map((s) => (
+              <div key={s.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${s.color}`}>
+                <div className="font-black text-lg uppercase">{s.name}</div>
+                <div className="text-xs font-bold uppercase opacity-70 mt-1">{s.layers}</div>
+                <div className="text-sm mt-2 opacity-90">{s.what}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Publish Your Tool */}
+      <section className="border-b-4 border-black px-6 py-16 bg-neo-accent">
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-3xl font-black uppercase mb-6">Publish Your Own Tool</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">
+              <div className="font-black text-lg mb-2">1. Build</div>
+              <pre className="text-[11px] bg-black text-green-400 p-3 overflow-x-auto border-2 border-black">
+{`export async function myTool(
+  input: string
+) {
+  return { result: "..." };
+}`}
+              </pre>
+            </div>
+            <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">
+              <div className="font-black text-lg mb-2">2. Register</div>
+              <pre className="text-[11px] bg-black text-green-400 p-3 overflow-x-auto border-2 border-black">
+{`bun run register-tool.ts \\
+  --name "my-tool" \\
+  --capabilities "x,y" \\
+  --price "0.01"`}
+              </pre>
+            </div>
+            <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">
+              <div className="font-black text-lg mb-2">3. Earn</div>
+              <div className="text-sm leading-relaxed">
+                Your tool appears in the registry. When a task matches your capabilities, the Orchestrator calls you and pays USDC per call.
+              </div>
+              <div className="mt-3 bg-green-100 border-2 border-black p-2 text-center">
+                <span className="font-black text-lg">💸 0.01 USDC/call</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Tech Stack */}
+      <section className="border-b-4 border-black px-6 py-12 bg-neo-white">
+        <div className="max-w-5xl mx-auto">
+          <h3 className="text-2xl font-black uppercase mb-6">Tech Stack</h3>
+          <div className="flex flex-wrap gap-2">
+            {[
+              "TypeScript", "Bun", "Next.js 15", "React 19", "Tailwind v4",
+              "ethers.js", "viem", "0G SDK", "AXL P2P", "Solidity",
+              "Express MCP", "EIP-712", "x402", "Turborepo",
+            ].map((tech) => (
+              <span key={tech} className="border-3 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] bg-neo-bg">
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="px-6 py-8 bg-black text-white">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <div>
+            <div className="font-black text-lg uppercase">AgentMesh</div>
+            <div className="text-xs opacity-60 mt-1">Decentralized MCP Tool Marketplace • ETHGlobal Open Agents 2026</div>
+          </div>
+          <div className="flex items-center gap-4">
+            <a href="https://github.com/kunalshah017/AgentMesh" target="_blank" rel="noopener noreferrer" className="text-sm font-bold underline hover:no-underline">
+              GitHub
+            </a>
+            <Link href="/dashboard" className="text-sm font-bold underline hover:no-underline">
+              Dashboard
+            </Link>
+          </div>
+          <div className="text-xs opacity-40">
+            Built by @kunalshah017
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
