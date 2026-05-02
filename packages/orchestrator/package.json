@@ -12,15 +12,16 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@agentmesh/shared": "*",
+    "@agentmesh/executor": "*",
     "@agentmesh/researcher": "*",
     "@agentmesh/risk-analyst": "*",
-    "@agentmesh/executor": "*",
-    "openai": "^4.80.0",
+    "@agentmesh/shared": "*",
+    "dotenv": "^17.4.2",
     "express": "^5.1.0",
+    "openai": "^4.80.0",
+    "uuid": "^11.1.0",
     "ws": "^8.18.0",
-    "x402": "^0.2.0",
-    "uuid": "^11.1.0"
+    "x402": "^0.2.0"
   },
   "devDependencies": {
     "typescript": "^5.8.0",

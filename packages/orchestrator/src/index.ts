@@ -1,6 +1,14 @@
 // Orchestrator Agent - Main Entry Point
 // The central coordinator with LLM reasoning (0G Compute)
 
+import dotenv from "dotenv";
+import path from "path";
+import { fileURLToPath } from "url";
+
+// Load .env from repo root
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+
 import { createServer } from "./server.js";
 import { OrchestratorAgent } from "./agent.js";
 import { LocalToolRouter } from "./local-router.js";
