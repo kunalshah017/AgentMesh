@@ -444,7 +444,7 @@ vs **Skillname** (ENS + 0G Storage + KeeperHub — **MEDIUM THREAT** for ENS pri
 | ✅ DONE          | **4.5.2** Pay-with-any-token                                    | 2-3h      | MEDIUM       | COMPLETE — 0.000434 ETH → 1.00 USDC                           |
 | ✅ DONE          | **4.5.15** AI_USAGE.md                                          | 30m       | LOW-MEDIUM   | COMPLETE                                                      |
 | ✅ DONE          | **4.5.16** demo.sh one-command boot                             | 1h        | LOW-MEDIUM   | COMPLETE — 6-step verification script                         |
-| ⚪ P3            | **4.5.3** ENS on-chain                                          | 2-3h      | MEDIUM       | Nice but Skillname has cleaner ENS story anyway               |
+| ✅ P3            | **4.5.3** ENS on-chain                                          | 2-3h      | MEDIUM       | Registered agent-mesh.eth + 4 subnames on Sepolia             |
 | ⚪ P3            | **4.5.18** Cross-network AXL proof                              | 2-4h      | MEDIUM       | Scholar Swarm + QUORUM already have this; we'd be catching up |
 | ⚪ P3            | **4.5.9** A2A protocol demo                                     | 1-2h      | LOW          | AXL supports it, can document without wiring                  |
 | ⚪ P3            | **4.5.19** Automated run liveness                               | 1-2h      | LOW          | Nice-to-have, not differentiating                             |
@@ -479,10 +479,10 @@ vs **Skillname** (ENS + 0G Storage + KeeperHub — **MEDIUM THREAT** for ENS pri
 
 ### 4.5.3 ENS On-Chain (MEDIUM-HIGH PRIORITY)
 
-- ⬜ Get Sepolia ETH (ethglobal.com/faucet or alchemy faucet)
-- ⬜ Register agentmesh.eth parent name on Sepolia ENS
-- ⬜ Create 4 subnames with NameWrapper
-- ⬜ Set text records: capabilities, axl-key, price-per-task
+- ✅ Registered agent-mesh.eth on Sepolia (tx 0xafb65e3, block 10776502)
+- ✅ Created 4 subnames: researcher/executor/analyst/gas-optimizer.agent-mesh.eth
+- ✅ Set text records: description, x402.price, url on all subnames
+- ✅ Parent record: "AgentMesh - Decentralized AI Agent Marketplace"
 - ⬜ Wire Orchestrator to resolve real ENS (viem getEnsText) before falling back to local
 
 ### 4.5.4 KeeperHub × 0G Chain — Reputation via Cross-Chain Execution (🔴 P0 — UNIQUE CLAIM)

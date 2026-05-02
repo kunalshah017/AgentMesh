@@ -195,6 +195,8 @@ Every claim is backed by on-chain or verifiable evidence:
 | ReputationTracker deployed | Contract live on 0G Chain                                       | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4)                    |
 | x402 payment (researcher)  | 0.01 USDC transfer, Base Sepolia block 40986221                 | [tx 0x68eb13b...](https://sepolia.basescan.org/tx/0x68eb13ba381adee4ccce928461f4f4b0116f460f505b4d1c6968a4868e56927c)   |
 | x402 payment (executor)    | 0.05 USDC transfer, Base Sepolia block 40986230                 | [tx 0x76d2f90...](https://sepolia.basescan.org/tx/0x76d2f9047e3d96066fb975a0a15e549cdd32352171ab42d0ce089db96d256551)   |
+| ENS: agent-mesh.eth        | Registered on Sepolia + 4 subnames with text records            | [tx 0xafb65e3...](https://sepolia.etherscan.io/tx/0xafb65e330d1024e730c0f15fc9146b46740493ee4e3fb5b336bdfd10263b2a47)   |
+| ENS subnames               | researcher/executor/analyst/gas-optimizer.agent-mesh.eth         | [sepolia.app.ens.domains](https://sepolia.app.ens.domains/agent-mesh.eth)                                               |
 | Reputation tx (researcher) | recordTask confirmed, block 31120216                            | [tx 0xea2ca6c...](https://chainscan-newton.0g.ai/tx/0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3) |
 | Reputation tx (executor)   | recordTask confirmed, block 31120275                            | [tx 0x06caf93...](https://chainscan-newton.0g.ai/tx/0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd) |
 | Reputation tx (analyst)    | recordTask confirmed, block 31125183                            | [tx 0xcd21f6d...](https://chainscan-newton.0g.ai/tx/0xcd21f6d0d04e2c4367efa5391b5e0a7d950aade4e47f0661765b94ec6298dbac) |
@@ -219,7 +221,7 @@ We believe in transparency. Here's what's real and what has constraints:
 2. **Swap execution is quote-only** — Uniswap Trading API returns real mainnet quotes, but we don't broadcast swap transactions (would need funded wallet + approval flow).
 3. **0G Storage depends on community node** — We use `http://178.238.236.119:6789` (community KV node). If it goes offline, storage falls back to content-addressed hashes.
 4. **KeeperHub workflow execution requires Turnkey wallet funding** — `ai_generate_workflow` works, but `execute_workflow` needs a funded Turnkey wallet we haven't provisioned.
-5. **ENS is local registry** — We use a local JS map for agent discovery rather than on-chain Sepolia ENS.
+5. **ENS is on Sepolia testnet** — `agent-mesh.eth` registered with 4 agent subnames + text records. Production would use mainnet ENS.
 6. **Single-machine mesh** — All 4 AXL nodes run on localhost. Production would use separate machines/IPs.
 7. **No rate limiting** — Tool providers don't rate-limit requests (fine for demo, not for production).
 8. **Reputation writes cost gas** — Each `recordTask` call costs ~117K gas on 0G Chain. Production would batch updates.
