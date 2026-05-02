@@ -7,14 +7,19 @@ interface RegisteredTool {
     capabilities: string[];
     pricePerCall: string;
     isActive: boolean;
+    reputation?: {
+        tasksCompleted: number;
+        successRate: number;
+        txHash?: string;
+    };
 }
 
 // On-chain registry data (fetched from orchestrator API or fallback to known state)
 const FALLBACK_REGISTRY: RegisteredTool[] = [
     { ensName: "orchestrator.agentmesh.eth", capabilities: ["task-planning", "tool-discovery", "orchestration"], pricePerCall: "0", isActive: true },
-    { ensName: "researcher.agentmesh.eth", capabilities: ["defi-research", "scan-yields", "token-info", "protocol-stats"], pricePerCall: "0.01", isActive: true },
+    { ensName: "researcher.agentmesh.eth", capabilities: ["defi-research", "scan-yields", "token-info", "protocol-stats"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3" } },
     { ensName: "analyst.agentmesh.eth", capabilities: ["risk-analysis", "risk-assess", "contract-audit"], pricePerCall: "0.01", isActive: true },
-    { ensName: "executor.agentmesh.eth", capabilities: ["execution", "execute-swap", "execute-deposit", "check-balance"], pricePerCall: "0.02", isActive: true },
+    { ensName: "executor.agentmesh.eth", capabilities: ["execution", "execute-swap", "execute-deposit", "check-balance"], pricePerCall: "0.02", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd" } },
     { ensName: "gas-optimizer.agentmesh.eth", capabilities: ["gas-prediction", "fee-estimation"], pricePerCall: "0.005", isActive: true },
 ];
 
@@ -149,6 +154,30 @@ export function ToolRegistry() {
                                     </span>
                                 ))}
                             </div>
+
+                            {/* Reputation */}
+                            {tool.reputation && (
+                                <div className="mt-2 pt-2 border-t border-black/20 flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-[9px] font-black uppercase">
+                                            ✅ {tool.reputation.tasksCompleted} task{tool.reputation.tasksCompleted !== 1 ? "s" : ""}
+                                        </span>
+                                        <span className="text-[9px] font-bold text-green-700">
+                                            {tool.reputation.successRate}% success
+                                        </span>
+                                    </div>
+                                    {tool.reputation.txHash && (
+                                        <a
+                                            href={`https://chainscan-newton.0g.ai/tx/${tool.reputation.txHash}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[9px] font-bold text-blue-600 hover:underline"
+                                        >
+                                            TX ↗
+                                        </a>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     );
                 })}
