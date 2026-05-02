@@ -1,7 +1,12 @@
 // ToolCatalog — Discovers and caches individual tools from registered MCP providers
 // Calls tools/list on each provider's endpoint to build a unified tool catalog
 
-import type { AgentIdentity, DiscoveredTool } from "@agentmesh/shared";
+import type {
+  AgentIdentity,
+  DiscoveredTool,
+  CatalogProvider,
+  CatalogResponse,
+} from "@agentmesh/shared";
 
 /**
  * MCP tools/list response format
@@ -26,6 +31,9 @@ interface MCPToolsListResponse {
 export class ToolCatalog {
   private tools: Map<string, DiscoveredTool> = new Map();
   private providerTools: Map<string, DiscoveredTool[]> = new Map();
+  private providerStatus: Map<string, "online" | "offline" | "degraded"> =
+    new Map();
+  private providerMeta: Map<string, AgentIdentity> = new Map();
   private lastRefresh: number = 0;
 
   /**
@@ -70,6 +78,11 @@ export class ToolCatalog {
       (p) => p.endpoint && p.endpoint.startsWith("http"),
     );
 
+    // Store provider metadata for catalog response
+    for (const provider of providers) {
+      this.providerMeta.set(provider.ensName, provider);
+    }
+
     const results = await Promise.allSettled(
       externalProviders.map((provider) => this.discoverFromProvider(provider)),
     );
@@ -78,6 +91,16 @@ export class ToolCatalog {
     for (const result of results) {
       if (result.status === "fulfilled") {
         discovered += result.value;
+      }
+    }
+
+    // Also register local-only providers (no endpoint) as offline in catalog
+    const localProviders = providers.filter(
+      (p) => !p.endpoint || !p.endpoint.startsWith("http"),
+    );
+    for (const provider of localProviders) {
+      if (!this.providerStatus.has(provider.ensName)) {
+        this.providerStatus.set(provider.ensName, "offline");
       }
     }
 
@@ -110,16 +133,19 @@ export class ToolCatalog {
 
       if (!response.ok) {
         // Provider might not support tools/list — use capabilities as fallback
+        this.providerStatus.set(provider.ensName, "degraded");
         this.registerFallbackTools(provider);
         return provider.capabilities.length;
       }
 
       const data = (await response.json()) as MCPToolsListResponse;
       if (data.error || !data.result?.tools) {
+        this.providerStatus.set(provider.ensName, "degraded");
         this.registerFallbackTools(provider);
         return provider.capabilities.length;
       }
 
+      this.providerStatus.set(provider.ensName, "online");
       const providerToolList: DiscoveredTool[] = [];
       for (const tool of data.result.tools) {
         const discovered: DiscoveredTool = {
@@ -136,6 +162,7 @@ export class ToolCatalog {
       return providerToolList.length;
     } catch {
       // Network error — register fallback tools from capabilities
+      this.providerStatus.set(provider.ensName, "offline");
       this.registerFallbackTools(provider);
       return provider.capabilities.length;
     }
@@ -178,6 +205,43 @@ export class ToolCatalog {
   }
 
   /**
+   * Register a built-in provider with its tools (always present in catalog).
+   */
+  registerBuiltinProvider(provider: {
+    name: string;
+    ensName: string;
+    endpoint: string;
+    categories: string[];
+    tools: Array<{
+      name: string;
+      description: string;
+      inputSchema?: Record<string, unknown>;
+    }>;
+  }): void {
+    const providerToolList: DiscoveredTool[] = provider.tools.map((t) => ({
+      name: t.name,
+      description: t.description,
+      inputSchema: t.inputSchema,
+      providerName: provider.ensName,
+      providerEndpoint: provider.endpoint,
+    }));
+
+    for (const tool of providerToolList) {
+      this.tools.set(tool.name, tool);
+    }
+    this.providerTools.set(provider.ensName, providerToolList);
+    this.providerStatus.set(provider.ensName, "online");
+    this.providerMeta.set(provider.ensName, {
+      name: provider.name,
+      ensName: provider.ensName,
+      axlPeerKey: "",
+      endpoint: provider.endpoint,
+      capabilities: provider.categories,
+    });
+    this.lastRefresh = Date.now();
+  }
+
+  /**
    * Get a summary of all tools for the LLM planner.
    */
   getToolSummaryForPlanner(): string {
@@ -186,5 +250,34 @@ export class ToolCatalog {
       return "Available capabilities: defi-research, risk-analysis, execution";
     }
     return tools.map((t) => `- ${t.name}: ${t.description}`).join("\n");
+  }
+
+  /**
+   * Get structured catalog response for the frontend API.
+   * Groups tools by provider with health status.
+   */
+  getCatalogResponse(): CatalogResponse {
+    const providers: CatalogProvider[] = [];
+
+    for (const [ensName, tools] of this.providerTools.entries()) {
+      const meta = this.providerMeta.get(ensName);
+      const status = this.providerStatus.get(ensName) ?? "offline";
+
+      providers.push({
+        name: meta?.name ?? ensName.split(".")[0] ?? ensName,
+        ensName,
+        endpoint: meta?.endpoint ?? tools[0]?.providerEndpoint ?? "",
+        categories: meta?.capabilities ?? [],
+        tools,
+        status,
+        owner: undefined, // Populated by caller from on-chain data
+      });
+    }
+
+    return {
+      providers,
+      tools: this.getAllTools(),
+      lastRefreshed: this.lastRefresh,
+    };
   }
 }

@@ -41,6 +41,65 @@ async function main() {
     walletAddress: process.env.ORCHESTRATOR_WALLET ?? "0xOrchestrator",
   });
 
+  // Register AgentMesh as the default built-in provider (always present)
+  agent.registerBuiltinProvider({
+    name: "AgentMesh",
+    ensName: "agent-mesh.eth",
+    endpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+    categories: [
+      "defi-research",
+      "yield-scanning",
+      "token-analysis",
+      "risk-analysis",
+      "contract-auditing",
+      "execution",
+      "token-swaps",
+      "gas-prediction",
+    ],
+    tools: [
+      {
+        name: "scan-yields",
+        description:
+          "Scan DeFi protocols for the best yield opportunities on a given token",
+      },
+      {
+        name: "token-info",
+        description:
+          "Get real-time token price, market cap, and volume from CoinGecko",
+      },
+      {
+        name: "protocol-stats",
+        description: "Get protocol TVL, volume, and statistics from DeFi Llama",
+      },
+      {
+        name: "risk-assess",
+        description: "Assess the risk level of a DeFi protocol",
+      },
+      {
+        name: "contract-audit",
+        description: "Check smart contract audit status for a protocol",
+      },
+      {
+        name: "execute-swap",
+        description:
+          "Get a live swap quote from Uniswap Trading API (real mainnet prices)",
+      },
+      {
+        name: "execute-deposit",
+        description: "Deposit tokens into a DeFi protocol",
+      },
+      {
+        name: "check-balance",
+        description: "Check wallet ETH or ERC-20 token balance on-chain",
+      },
+      {
+        name: "pay-with-any-token",
+        description:
+          "Auto-swap any token to USDC via Uniswap before x402 payment",
+      },
+    ],
+  });
+
   // Discover tools: try on-chain registry first, then local fallback
   const onChainTools = await discoverToolsFromRegistry();
   if (onChainTools.length > 0) {

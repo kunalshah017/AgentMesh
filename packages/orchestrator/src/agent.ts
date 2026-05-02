@@ -9,6 +9,7 @@ import {
   type AgentEvent,
   type PaymentRecord,
   type DiscoveredTool,
+  type CatalogResponse,
   callMCPService,
   PaymentRequiredError,
   discoverToolsByCapability,
@@ -32,6 +33,32 @@ export interface OrchestratorConfig {
   walletAddress?: string; // Orchestrator's wallet for x402 payments
 }
 
+export interface PaymentApprovalRequest {
+  toolName: string;
+  amount: string;
+  recipient: string;
+  /** EIP-712 domain + types + message for the user to sign */
+  eip712: {
+    domain: {
+      name: string;
+      version: string;
+      chainId: number;
+      verifyingContract: string;
+    };
+    types: Record<string, Array<{ name: string; type: string }>>;
+    message: Record<string, unknown>;
+  };
+}
+
+export interface PaymentApprovalResponse {
+  approved: boolean;
+  signature?: string;
+}
+
+export type PaymentApprovalCallback = (
+  request: PaymentApprovalRequest,
+) => Promise<PaymentApprovalResponse>;
+
 export class OrchestratorAgent {
   private llm: OpenAI;
   private config: OrchestratorConfig;
@@ -39,6 +66,7 @@ export class OrchestratorAgent {
   private toolCatalog: ToolCatalog = new ToolCatalog();
   private eventListeners: ((event: AgentEvent) => void)[] = [];
   private localRouter?: LocalToolRouter;
+  private paymentApprovalCallback?: PaymentApprovalCallback;
 
   constructor(config: OrchestratorConfig) {
     this.config = config;
@@ -53,6 +81,30 @@ export class OrchestratorAgent {
    */
   setLocalRouter(router: LocalToolRouter): void {
     this.localRouter = router;
+  }
+
+  /**
+   * Get the local tool router (for MCP server endpoint).
+   */
+  getLocalRouter(): LocalToolRouter | undefined {
+    return this.localRouter;
+  }
+
+  /**
+   * Register a built-in provider that's always present in the catalog.
+   */
+  registerBuiltinProvider(provider: {
+    name: string;
+    ensName: string;
+    endpoint: string;
+    categories: string[];
+    tools: Array<{
+      name: string;
+      description: string;
+      inputSchema?: Record<string, unknown>;
+    }>;
+  }): void {
+    this.toolCatalog.registerBuiltinProvider(provider);
   }
 
   /**
@@ -71,10 +123,10 @@ export class OrchestratorAgent {
   }
 
   /**
-   * Return discovered tools from external MCP providers (for API).
+   * Return structured catalog response with providers + tools for frontend.
    */
-  getCatalog(): DiscoveredTool[] {
-    return this.toolCatalog.getAllTools();
+  getCatalog(): CatalogResponse {
+    return this.toolCatalog.getCatalogResponse();
   }
 
   /**
@@ -114,35 +166,12 @@ export class OrchestratorAgent {
     }
 
     // 3. Discover individual tools from external providers via tools/list
-    await this.toolCatalog.discoverFromProviders(this.toolRegistry);
-
-    // Register local tools in catalog so planner sees them
-    if (this.config.localMode && this.localRouter) {
-      this.toolCatalog.registerLocalTools([
-        {
-          name: "scan-yields",
-          description: "Scan DeFi protocols for yield opportunities",
-        },
-        { name: "token-info", description: "Get token price and market data" },
-        {
-          name: "protocol-stats",
-          description: "Get protocol TVL and statistics",
-        },
-        { name: "risk-assess", description: "Assess risk of a DeFi protocol" },
-        {
-          name: "contract-audit",
-          description: "Check smart contract audit status",
-        },
-        {
-          name: "execute-swap",
-          description: "Execute a token swap via Uniswap",
-        },
-        {
-          name: "execute-deposit",
-          description: "Deposit tokens into a DeFi protocol",
-        },
-        { name: "check-balance", description: "Check wallet token balances" },
-      ]);
+    // Skip our own provider (agent-mesh.eth) — already registered as built-in
+    const externalProviders = this.toolRegistry.filter(
+      (p) => p.ensName !== "agent-mesh.eth",
+    );
+    if (externalProviders.length > 0) {
+      await this.toolCatalog.discoverFromProviders(externalProviders);
     }
   }
 
@@ -154,6 +183,14 @@ export class OrchestratorAgent {
     return () => {
       this.eventListeners = this.eventListeners.filter((l) => l !== listener);
     };
+  }
+
+  /**
+   * Set a callback for requesting user payment approval.
+   * When set, tool calls will pause and ask the user to sign before paying.
+   */
+  setPaymentApproval(cb: PaymentApprovalCallback | undefined): void {
+    this.paymentApprovalCallback = cb;
   }
 
   private emit(event: AgentEvent): void {
@@ -460,6 +497,127 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
     tool: AgentIdentity,
     subtask: SubTask,
   ): Promise<unknown> {
+    // Local mode: prefer local router for our own provider or any local tool
+    if (this.config.localMode && this.localRouter) {
+      const toolName = this.resolveToolName(subtask);
+      const hasLocalTool = this.localRouter.listTools().includes(toolName);
+
+      if (hasLocalTool || tool.ensName === "agent-mesh.eth") {
+        // Create real x402 payment proof (EIP-712 signed)
+        const price =
+          TOOL_PRICES[toolName as keyof typeof TOOL_PRICES] ?? "0.01";
+
+        // Request user approval if callback is set
+        let paymentProof: string;
+        if (this.paymentApprovalCallback) {
+          const ethers = await import("ethers");
+          const validAfter = Math.floor(Date.now() / 1000) - 60;
+          const validBefore = Math.floor(Date.now() / 1000) + 3600;
+          const nonce = ethers.hexlify(ethers.randomBytes(32));
+          const value = ethers.parseUnits(price, 6);
+
+          const eip712 = {
+            domain: {
+              name: "USD Coin",
+              version: "2",
+              chainId: 84532,
+              verifyingContract: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            },
+            types: {
+              TransferWithAuthorization: [
+                { name: "from", type: "address" },
+                { name: "to", type: "address" },
+                { name: "value", type: "uint256" },
+                { name: "validAfter", type: "uint256" },
+                { name: "validBefore", type: "uint256" },
+                { name: "nonce", type: "bytes32" },
+              ],
+            },
+            message: {
+              from: this.config.walletAddress ?? "0xOrchestrator",
+              to: tool.ensName,
+              value: value.toString(),
+              validAfter: validAfter.toString(),
+              validBefore: validBefore.toString(),
+              nonce,
+            },
+          };
+
+          this.emit({
+            type: "payment_request",
+            toolName,
+            amount: price,
+            recipient: tool.ensName,
+          });
+
+          const approval = await this.paymentApprovalCallback({
+            toolName,
+            amount: price,
+            recipient: tool.ensName,
+            eip712,
+          });
+
+          if (!approval.approved) {
+            throw new Error("Payment rejected by user");
+          }
+
+          // Build proof from user's signature
+          const payload = {
+            type: "x402-payment",
+            version: "1.0",
+            network: "base-sepolia",
+            chainId: 84532,
+            token: "USDC",
+            tokenAddress: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
+            from: this.config.walletAddress ?? "0xOrchestrator",
+            to: tool.ensName,
+            value: value.toString(),
+            validAfter,
+            validBefore,
+            nonce,
+            signature: approval.signature,
+            signed: true,
+          };
+          paymentProof = Buffer.from(JSON.stringify(payload)).toString(
+            "base64",
+          );
+        } else {
+          // No user callback — auto-sign server-side (legacy/API mode)
+          paymentProof = await createPaymentProof(
+            this.config.walletAddress ?? "0xOrchestrator",
+            tool.ensName,
+            price,
+          );
+        }
+
+        // Derive txHash from the signed proof
+        const proofData = JSON.parse(
+          Buffer.from(paymentProof, "base64").toString(),
+        );
+        const txHash = proofData.signature
+          ? proofData.signature.slice(0, 66)
+          : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
+
+        const payment: PaymentRecord = {
+          txHash,
+          amount: price,
+          from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
+          to: tool.ensName,
+          timestamp: Date.now(),
+        };
+        this.emit({ type: "payment_sent", payment });
+        subtask.payment = payment;
+
+        const response = await this.localRouter.call(toolName, {
+          task: subtask.description,
+        });
+        if (response.error) {
+          throw new Error(response.error.message);
+        }
+        return response.result;
+      }
+    }
+
     // External HTTP endpoint: call tool via its registered URL
     // Uses x402 flow: attempt call → if 402 → pay → retry
     if (tool.endpoint && tool.endpoint.startsWith("http")) {
@@ -573,45 +731,6 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         throw new Error(data.error.message);
       }
       return data.result;
-    }
-
-    // Local mode: call tool directly without AXL
-    if (this.config.localMode && this.localRouter) {
-      const toolName = this.resolveToolName(subtask);
-
-      // Create real x402 payment proof (EIP-712 signed)
-      const price = TOOL_PRICES[toolName as keyof typeof TOOL_PRICES] ?? "0.01";
-      const paymentProof = await createPaymentProof(
-        this.config.walletAddress ?? "0xOrchestrator",
-        tool.ensName,
-        price,
-      );
-
-      // Derive txHash from the signed proof
-      const proofData = JSON.parse(
-        Buffer.from(paymentProof, "base64").toString(),
-      );
-      const txHash = proofData.signature
-        ? proofData.signature.slice(0, 66)
-        : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
-
-      const payment: PaymentRecord = {
-        txHash,
-        amount: price,
-        from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
-        to: tool.ensName,
-        timestamp: Date.now(),
-      };
-      this.emit({ type: "payment_sent", payment });
-      subtask.payment = payment;
-
-      const response = await this.localRouter.call(toolName, {
-        task: subtask.description,
-      });
-      if (response.error) {
-        throw new Error(response.error.message);
-      }
-      return response.result;
     }
 
     // AXL mode: call via P2P mesh
