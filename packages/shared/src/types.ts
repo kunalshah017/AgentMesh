@@ -18,6 +18,25 @@ export interface DiscoveredTool {
   providerEndpoint: string; // Provider's MCP endpoint URL
 }
 
+// --- Catalog Provider (provider + its discovered tools, for frontend consumption) ---
+export interface CatalogProvider {
+  name: string; // Provider display name
+  ensName: string; // ENS subname (e.g. "gas-tools.agent-mesh.eth")
+  endpoint: string; // MCP endpoint URL
+  categories: string[]; // Categories/capabilities from registration
+  tools: DiscoveredTool[]; // Individual tools discovered via tools/list
+  status: "online" | "offline" | "degraded"; // Live health status
+  registeredAt?: number; // Unix timestamp of on-chain registration
+  owner?: string; // Provider owner address
+}
+
+// --- Catalog Response (what /catalog returns to the frontend) ---
+export interface CatalogResponse {
+  providers: CatalogProvider[];
+  tools: DiscoveredTool[];
+  lastRefreshed: number;
+}
+
 // --- MCP Types ---
 export interface MCPRequest {
   jsonrpc: "2.0";
@@ -89,6 +108,12 @@ export type AgentEvent =
   | { type: "tool_discovered"; tool: AgentIdentity }
   | { type: "tool_called"; tool: string; method: string }
   | { type: "payment_sent"; payment: PaymentRecord }
+  | {
+      type: "payment_request";
+      toolName: string;
+      amount: string;
+      recipient: string;
+    }
   | { type: "task_completed"; taskId: string; result: unknown }
   | { type: "error"; message: string };
 
