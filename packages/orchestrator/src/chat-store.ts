@@ -1,15 +1,10 @@
-// Chat store — persisted to 0G KV Storage + local JSON cache
+// Chat store — persisted to 0G KV Storage
 // Each user (wallet) has multiple chats, each chat has messages.
 // In-memory cache with async write-through to 0G decentralized storage.
-// Local JSON file provides instant reads; 0G provides decentralized persistence.
+// On first access per wallet, rehydrates from 0G using deterministic keys.
 
 import { v4 as uuid } from "uuid";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
-import { join } from "path";
 import { batchUploadToStorage, downloadFromStorage } from "@agentmesh/shared";
-
-// Local cache directory (next to dist/)
-const CACHE_DIR = join(__dirname, "..", ".chat-cache");
 
 export interface ChatMessage {
   id: string;
@@ -49,45 +44,6 @@ class ChatStore {
     return this.chats.get(addr)!;
   }
 
-  /** Local cache file path for a wallet */
-  private localCachePath(walletAddress: string): string {
-    return join(CACHE_DIR, `${walletAddress.toLowerCase()}.json`);
-  }
-
-  /** Save all chats for a wallet to local JSON */
-  private saveLocalCache(walletAddress: string): void {
-    const addr = walletAddress.toLowerCase();
-    const userChats = this.getUserChats(addr);
-    const data = Array.from(userChats.values());
-    try {
-      if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
-      writeFileSync(this.localCachePath(addr), JSON.stringify(data));
-    } catch {
-      // Non-critical
-    }
-  }
-
-  /** Load chats from local JSON cache */
-  private loadLocalCache(walletAddress: string): boolean {
-    const addr = walletAddress.toLowerCase();
-    const filePath = this.localCachePath(addr);
-    try {
-      if (!existsSync(filePath)) return false;
-      const raw = readFileSync(filePath, "utf8");
-      const data = JSON.parse(raw) as Chat[];
-      if (!Array.isArray(data) || data.length === 0) return false;
-      for (const chat of data) {
-        this.getUserChats(addr).set(chat.id, chat);
-      }
-      console.log(
-        `  📦 [Local] Loaded ${data.length} chats for ${addr.slice(0, 10)}...`,
-      );
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
   /** Deterministic key for a wallet's chat index */
   private indexKey(walletAddress: string): string {
     return `agentmesh/chats/${walletAddress.toLowerCase()}/index`;
@@ -98,7 +54,7 @@ class ChatStore {
     return `agentmesh/chats/${walletAddress.toLowerCase()}/${chatId}`;
   }
 
-  /** Load a wallet's chats from local cache or 0G Storage */
+  /** Load a wallet's chats from 0G Storage (called on first access) */
   async loadWalletChats(walletAddress: string): Promise<void> {
     const addr = walletAddress.toLowerCase();
     if (this.loadedWallets.has(addr)) return;
@@ -110,13 +66,6 @@ class ChatStore {
     }
 
     const loadPromise = (async () => {
-      // Try local cache first (instant)
-      if (this.loadLocalCache(addr)) {
-        this.loadedWallets.add(addr);
-        return;
-      }
-
-      // Fall back to 0G KV Storage
       try {
         const indexData = await downloadFromStorage(this.indexKey(addr));
         if (
@@ -174,10 +123,6 @@ class ChatStore {
   /** Persist chat data + index in a single 0G transaction (non-blocking) */
   private persistChatAndIndex(chat: Chat): void {
     const addr = chat.walletAddress.toLowerCase();
-
-    // Always save to local cache immediately
-    this.saveLocalCache(addr);
-
     const chatData = {
       type: "agentmesh-chat",
       version: "1.0",

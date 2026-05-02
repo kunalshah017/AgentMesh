@@ -215,10 +215,11 @@ export async function downloadFromStorage(
   kvRpc?: string,
 ): Promise<Record<string, unknown>> {
   const kv = new KvClient(kvRpc ?? KV_RPC);
-  const encodedKey = ethers.encodeBase64(Buffer.from(key, "utf8"));
+  // Pass raw bytes — the SDK handles base64 encoding internally
+  const keyBytes = Buffer.from(key, "utf8");
 
   try {
-    const value = await kv.getValue(STREAM_ID, encodedKey as any);
+    const value = await kv.getValue(STREAM_ID, keyBytes);
     if (value && value.data) {
       const decoded = Buffer.from(value.data, "base64").toString("utf8");
       return JSON.parse(decoded) as Record<string, unknown>;

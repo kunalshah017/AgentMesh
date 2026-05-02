@@ -27,9 +27,6 @@ Thumbs.db
 # Turbo
 .turbo/
 
-# Chat cache
-.chat-cache/
-
 # Testing
 coverage/
 
