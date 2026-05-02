@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
 
 const TOOLS = [
   { name: "orchestrator", ensName: "orchestrator.agentmesh.eth", icon: "🧠", role: "Brain", capabilities: ["task-planning", "tool-discovery", "orchestration"], color: "bg-red-100 border-red-400", type: "BRAIN" },
@@ -41,6 +42,37 @@ export default function Home() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <Link
+            href="/explore"
+            className="text-xs font-black uppercase hidden md:inline hover:text-neo-accent transition-colors"
+          >
+            Explore
+          </Link>
+          <Link
+            href="/publish"
+            className="text-xs font-black uppercase hidden md:inline hover:text-neo-accent transition-colors"
+          >
+            Publish
+          </Link>
+          <ConnectButton.Custom>
+            {({ account, chain, openConnectModal, mounted }) => {
+              if (!mounted || !account || !chain) {
+                return (
+                  <button
+                    onClick={openConnectModal}
+                    className="bg-neo-secondary border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+                  >
+                    Connect Wallet
+                  </button>
+                );
+              }
+              return (
+                <div className="bg-green-200 border-4 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000]">
+                  {account.displayName}
+                </div>
+              );
+            }}
+          </ConnectButton.Custom>
           <Link
             href="/dashboard"
             className="bg-black text-white border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#666] hover:shadow-[2px_2px_0px_0px_#666] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
@@ -207,11 +239,11 @@ export default function Home() {
             ))}
 
             {/* Publish CTA card */}
-            <div className="border-4 border-dashed border-black p-4 flex flex-col items-center justify-center text-center bg-neo-bg opacity-80 hover:opacity-100 transition-opacity">
+            <Link href="/publish" className="border-4 border-dashed border-black p-4 flex flex-col items-center justify-center text-center bg-neo-bg opacity-80 hover:opacity-100 transition-opacity">
               <span className="text-3xl mb-2">➕</span>
               <span className="font-black text-sm uppercase">Your Tool Here</span>
               <span className="text-[10px] mt-1 opacity-60">Deploy → Register → Earn</span>
-            </div>
+            </Link>
           </div>
         </div>
       </section>
@@ -240,7 +272,7 @@ export default function Home() {
             <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">
               <div className="font-black text-lg mb-2">1. Build</div>
               <pre className="text-[11px] bg-black text-green-400 p-3 overflow-x-auto border-2 border-black">
-{`export async function myTool(
+                {`export async function myTool(
   input: string
 ) {
   return { result: "..." };
@@ -250,7 +282,7 @@ export default function Home() {
             <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">
               <div className="font-black text-lg mb-2">2. Register</div>
               <pre className="text-[11px] bg-black text-green-400 p-3 overflow-x-auto border-2 border-black">
-{`bun run register-tool.ts \\
+                {`bun run register-tool.ts \\
   --name "my-tool" \\
   --capabilities "x,y" \\
   --price "0.01"`}
@@ -298,6 +330,12 @@ export default function Home() {
             <a href="https://github.com/kunalshah017/AgentMesh" target="_blank" rel="noopener noreferrer" className="text-sm font-bold underline hover:no-underline">
               GitHub
             </a>
+            <Link href="/explore" className="text-sm font-bold underline hover:no-underline">
+              Explore
+            </Link>
+            <Link href="/publish" className="text-sm font-bold underline hover:no-underline">
+              Publish
+            </Link>
             <Link href="/dashboard" className="text-sm font-bold underline hover:no-underline">
               Dashboard
             </Link>
