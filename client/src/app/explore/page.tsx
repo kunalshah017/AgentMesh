@@ -3,189 +3,285 @@
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 import { useState } from "react";
-import { useRegistryAgents } from "@/hooks/useRegistry";
-import { formatEther } from "viem";
+import { useCatalog, type CatalogProvider, type CatalogTool } from "@/hooks/useCatalog";
 
-const ICONS: Record<string, string> = {
-    orchestrator: "🧠",
+const PROVIDER_ICONS: Record<string, string> = {
     researcher: "🔍",
     analyst: "⚠️",
     executor: "🔧",
     "gas-optimizer": "⛽",
+    "risk-analyst": "⚠️",
+    "risk analyst": "⚠️",
+    "gas optimizer": "⛽",
 };
 
-const COLORS: Record<string, string> = {
-    orchestrator: "bg-red-100",
-    researcher: "bg-blue-100",
-    analyst: "bg-yellow-100",
-    executor: "bg-purple-100",
-    "gas-optimizer": "bg-green-100",
+const PROVIDER_COLORS: Record<string, string> = {
+    researcher: "border-l-blue-500",
+    analyst: "border-l-yellow-500",
+    executor: "border-l-purple-500",
+    "gas-optimizer": "border-l-green-500",
+    "risk-analyst": "border-l-yellow-500",
+    "risk analyst": "border-l-yellow-500",
+    "gas optimizer": "border-l-green-500",
 };
 
-function getToolName(ensName: string): string {
-    return ensName.split(".")[0] ?? ensName;
-}
+const STATUS_STYLES: Record<string, { dot: string; label: string }> = {
+    online: { dot: "bg-green-500", label: "Online" },
+    offline: { dot: "bg-red-500", label: "Offline" },
+    degraded: { dot: "bg-yellow-500", label: "Degraded" },
+};
 
-function isOrchestrator(capabilities: string[]): boolean {
-    return capabilities.some((c) => c.includes("orchestration") || c.includes("task-planning"));
-}
+type ViewMode = "providers" | "tools";
 
 export default function ExplorePage() {
     const [search, setSearch] = useState("");
-    const [filter, setFilter] = useState<"all" | "BRAIN" | "TOOL">("all");
-    const { agents, isLoading } = useRegistryAgents();
+    const [view, setView] = useState<ViewMode>("providers");
+    const { providers, tools, isLoading } = useCatalog();
 
-    const displayAgents = agents.map((a) => {
-        const name = getToolName(a.ensName);
-        const type = isOrchestrator(a.capabilities) ? "BRAIN" : "TOOL";
-        return { ...a, name, type, icon: ICONS[name] ?? "🔧", color: COLORS[name] ?? "bg-gray-100" };
+    // Filter providers by search
+    const filteredProviders = providers.filter((p) => {
+        if (!search) return true;
+        const q = search.toLowerCase();
+        return (
+            p.name.toLowerCase().includes(q) ||
+            p.ensName.toLowerCase().includes(q) ||
+            p.categories.some((c) => c.toLowerCase().includes(q)) ||
+            p.tools.some((t) => t.name.toLowerCase().includes(q) || t.description.toLowerCase().includes(q))
+        );
     });
 
-    const filtered = displayAgents.filter((t) => {
-        const matchType = filter === "all" || t.type === filter;
-        const matchSearch =
-            !search ||
-            t.name.toLowerCase().includes(search.toLowerCase()) ||
-            t.capabilities.some((c: string) => c.toLowerCase().includes(search.toLowerCase()));
-        return matchType && matchSearch;
+    // Filter tools by search
+    const filteredTools = tools.filter((t) => {
+        if (!search) return true;
+        const q = search.toLowerCase();
+        return (
+            t.name.toLowerCase().includes(q) ||
+            t.description.toLowerCase().includes(q) ||
+            t.providerName.toLowerCase().includes(q)
+        );
     });
+
+    const totalTools = providers.reduce((sum, p) => sum + p.tools.length, 0);
 
     return (
         <div className="min-h-screen bg-neo-bg">
-            {/* Nav */}
             <Navbar />
 
-            <main className="max-w-5xl mx-auto px-6 py-12">
+            <main className="max-w-6xl mx-auto px-6 py-12">
+                {/* Header */}
                 <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-8">
                     <div>
-                        <h2 className="text-3xl md:text-4xl font-black uppercase">Explore Tools</h2>
+                        <h2 className="text-3xl md:text-4xl font-black uppercase">MCP Registry</h2>
                         <p className="text-sm font-medium opacity-60 mt-1">
-                            {isLoading ? "Loading from 0G Chain..." : `${agents.length} tools registered on-chain`}
+                            {isLoading
+                                ? "Discovering providers..."
+                                : `${providers.length} providers · ${totalTools} tools available`}
                         </p>
                     </div>
                     <div className="flex gap-3 items-center">
                         <div className="bg-green-400 border-3 border-black px-3 py-1 shadow-[2px_2px_0px_0px_#000]">
-                            <span className="text-[10px] font-black uppercase">⛓️ Live On-Chain</span>
+                            <span className="text-[10px] font-black uppercase">⛓️ On-Chain Verified</span>
                         </div>
                         <Link
                             href="/publish"
                             className="bg-neo-accent border-4 border-black px-4 py-2 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
                         >
-                            + Publish Tool
+                            + Publish MCP Server
                         </Link>
                     </div>
                 </div>
 
-                {/* Search + Filters */}
+                {/* Search + View Toggle */}
                 <div className="flex flex-col md:flex-row gap-3 mb-8">
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search by name or capability..."
+                        placeholder="Search providers, tools, or categories..."
                         className="flex-1 border-4 border-black p-3 text-sm font-bold bg-neo-white focus:outline-none focus:border-neo-accent"
                     />
                     <div className="flex gap-2">
-                        {(["all", "BRAIN", "TOOL"] as const).map((f) => (
+                        {(["providers", "tools"] as const).map((v) => (
                             <button
-                                key={f}
-                                onClick={() => setFilter(f)}
-                                className={`border-3 border-black px-4 py-2 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] transition-all ${filter === f ? "bg-neo-accent" : "bg-neo-white hover:bg-neo-bg"
-                                    }`}
+                                key={v}
+                                onClick={() => setView(v)}
+                                className={`border-3 border-black px-4 py-2 text-xs font-black uppercase shadow-[3px_3px_0px_0px_#000] transition-all ${view === v ? "bg-neo-accent" : "bg-neo-white hover:bg-neo-bg"}`}
                             >
-                                {f}
+                                {v === "providers" ? `📦 Providers (${providers.length})` : `🔧 Tools (${totalTools})`}
                             </button>
                         ))}
                     </div>
                 </div>
 
-                {/* Results */}
-                <div className="text-xs font-black uppercase opacity-50 mb-4">{filtered.length} tools found</div>
-
+                {/* Loading State */}
                 {isLoading && (
                     <div className="border-4 border-black p-12 text-center bg-neo-white shadow-[5px_5px_0px_0px_#000]">
                         <div className="animate-pulse">
-                            <span className="text-3xl block mb-3">⛓️</span>
-                            <p className="font-black uppercase">Reading from 0G Chain...</p>
-                            <p className="text-xs opacity-50 mt-1">Fetching AgentRegistry + ReputationTracker</p>
+                            <span className="text-3xl block mb-3">🔍</span>
+                            <p className="font-black uppercase">Discovering MCP Providers...</p>
+                            <p className="text-xs opacity-50 mt-1">Calling tools/list on registered endpoints</p>
                         </div>
                     </div>
                 )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {filtered.map((tool) => (
-                        <div key={tool.id} className={`border-4 border-black p-5 shadow-[5px_5px_0px_0px_#000] ${tool.color} hover:shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all`}>
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{tool.icon}</span>
-                                    <div>
-                                        <span className="font-black uppercase text-sm block">{tool.name}</span>
-                                        <span className="text-[10px] opacity-50 font-mono">{tool.ensName}</span>
-                                    </div>
-                                </div>
-                                <span className={`px-2 py-0.5 text-[9px] font-black uppercase ${tool.type === "BRAIN" ? "bg-black text-white" : "bg-white border border-black"}`}>
-                                    {tool.type}
-                                </span>
-                            </div>
-
-                            {/* Owner */}
-                            <div className="text-[10px] font-mono opacity-40 mb-2">
-                                owner: {tool.owner.slice(0, 6)}...{tool.owner.slice(-4)}
-                            </div>
-
-                            {/* Capabilities */}
-                            <div className="flex flex-wrap gap-1 mb-4">
-                                {tool.capabilities.map((cap: string) => (
-                                    <span key={cap} className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                                        {cap}
-                                    </span>
-                                ))}
-                            </div>
-
-                            {/* Stats row */}
-                            <div className="flex items-center gap-4 border-t-2 border-black pt-3">
-                                <div className="text-center">
-                                    <div className="text-xs font-black">
-                                        {tool.pricePerCall === 0n ? "Free" : `${formatEther(tool.pricePerCall)}`}
-                                    </div>
-                                    <div className="text-[9px] uppercase opacity-50">price/call</div>
-                                </div>
-                                {tool.reputation && (
-                                    <>
-                                        <div className="text-center">
-                                            <div className="text-xs font-black">{Number(tool.reputation.tasksCompleted)}</div>
-                                            <div className="text-[9px] uppercase opacity-50">tasks</div>
-                                        </div>
-                                        <div className="text-center">
-                                            <div className="text-xs font-black">{Math.round(tool.reputation.successRate)}%</div>
-                                            <div className="text-[9px] uppercase opacity-50">success</div>
-                                        </div>
-                                        <a
-                                            href={`https://chainscan-newton.0g.ai/address/0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="text-[9px] font-bold text-blue-600 hover:underline"
-                                        >
-                                            ⛓️ Verified
-                                        </a>
-                                    </>
-                                )}
-                                <div className="ml-auto">
-                                    <div className={`w-3 h-3 rounded-full border-2 border-black ${tool.active ? "bg-green-500" : "bg-red-500"}`} title={tool.active ? "Active" : "Inactive"} />
-                                </div>
-                            </div>
+                {/* Providers View */}
+                {view === "providers" && !isLoading && (
+                    <div className="space-y-6">
+                        <div className="text-xs font-black uppercase opacity-50 mb-2">
+                            {filteredProviders.length} provider{filteredProviders.length !== 1 ? "s" : ""} found
                         </div>
-                    ))}
-                </div>
 
-                {filtered.length === 0 && (
-                    <div className="border-4 border-dashed border-black p-12 text-center bg-neo-white">
-                        <span className="text-3xl block mb-3">🔍</span>
-                        <p className="font-black uppercase">No tools found</p>
-                        <p className="text-xs opacity-50 mt-1">Try a different search or filter</p>
+                        {filteredProviders.map((provider) => (
+                            <ProviderCard key={provider.ensName} provider={provider} />
+                        ))}
+
+                        {filteredProviders.length === 0 && (
+                            <EmptyState message="No providers match your search" />
+                        )}
+                    </div>
+                )}
+
+                {/* Tools View */}
+                {view === "tools" && !isLoading && (
+                    <div>
+                        <div className="text-xs font-black uppercase opacity-50 mb-4">
+                            {filteredTools.length} tool{filteredTools.length !== 1 ? "s" : ""} found
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {filteredTools.map((tool) => (
+                                <ToolCard key={`${tool.providerName}/${tool.name}`} tool={tool} />
+                            ))}
+                        </div>
+
+                        {filteredTools.length === 0 && (
+                            <EmptyState message="No tools match your search" />
+                        )}
                     </div>
                 )}
             </main>
+        </div>
+    );
+}
+
+function ProviderCard({ provider }: { provider: CatalogProvider }) {
+    const [expanded, setExpanded] = useState(true);
+    const nameKey = provider.name.toLowerCase();
+    const icon = PROVIDER_ICONS[nameKey] ?? "📦";
+    const borderColor = PROVIDER_COLORS[nameKey] ?? "border-l-gray-400";
+    const status = STATUS_STYLES[provider.status] ?? STATUS_STYLES.offline;
+
+    return (
+        <div className={`border-4 border-black bg-neo-white shadow-[5px_5px_0px_0px_#000] border-l-8 ${borderColor}`}>
+            {/* Provider Header */}
+            <div
+                className="p-5 cursor-pointer hover:bg-neo-bg/30 transition-colors"
+                onClick={() => setExpanded(!expanded)}
+            >
+                <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                        <span className="text-2xl">{icon}</span>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="font-black uppercase text-lg">{provider.name}</span>
+                                <span className={`w-2.5 h-2.5 rounded-full ${status.dot}`} title={status.label} />
+                            </div>
+                            <span className="text-[11px] font-mono opacity-50">{provider.ensName}</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <div className="text-right">
+                            <div className="text-sm font-black">{provider.tools.length}</div>
+                            <div className="text-[9px] uppercase opacity-50">tools</div>
+                        </div>
+                        <span className="text-lg opacity-40">{expanded ? "▼" : "▶"}</span>
+                    </div>
+                </div>
+
+                {/* Categories */}
+                <div className="flex flex-wrap gap-1.5 mt-3">
+                    {provider.categories.map((cat) => (
+                        <span key={cat} className="bg-neo-bg border-2 border-black px-2 py-0.5 text-[10px] font-bold uppercase">
+                            {cat}
+                        </span>
+                    ))}
+                </div>
+
+                {/* Endpoint */}
+                {provider.endpoint && (
+                    <div className="mt-2 text-[10px] font-mono opacity-40 truncate">
+                        endpoint: {provider.endpoint}
+                    </div>
+                )}
+            </div>
+
+            {/* Tools List (expanded) */}
+            {expanded && provider.tools.length > 0 && (
+                <div className="border-t-3 border-black">
+                    <div className="px-5 py-2 bg-neo-bg/50 border-b border-black/20">
+                        <span className="text-[10px] font-black uppercase tracking-wider opacity-60">
+                            Available Tools — Pricing via x402
+                        </span>
+                    </div>
+                    <div className="divide-y divide-black/10">
+                        {provider.tools.map((tool) => (
+                            <div key={tool.name} className="px-5 py-3 hover:bg-neo-bg/20 transition-colors">
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs">⚡</span>
+                                        <span className="font-bold text-sm">{tool.name}</span>
+                                    </div>
+                                    <span className="text-[10px] font-bold text-green-700 bg-green-100 border border-green-300 px-2 py-0.5 rounded-sm">
+                                        x402
+                                    </span>
+                                </div>
+                                <p className="text-xs opacity-60 mt-1 ml-5">{tool.description}</p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* Empty tools state */}
+            {expanded && provider.tools.length === 0 && (
+                <div className="border-t-3 border-black px-5 py-4 text-center">
+                    <span className="text-xs opacity-50">No tools discovered yet — provider may be offline</span>
+                </div>
+            )}
+        </div>
+    );
+}
+
+function ToolCard({ tool }: { tool: CatalogTool }) {
+    const providerKey = tool.providerName.split(".")[0] ?? "";
+    const icon = PROVIDER_ICONS[providerKey] ?? "📦";
+
+    return (
+        <div className="border-4 border-black p-4 bg-neo-white shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
+            <div className="flex items-start justify-between mb-2">
+                <div className="flex items-center gap-2">
+                    <span className="text-xs">⚡</span>
+                    <span className="font-black text-sm">{tool.name}</span>
+                </div>
+                <span className="text-[10px] font-bold text-green-700 bg-green-100 border border-green-300 px-1.5 py-0.5 rounded-sm">
+                    x402
+                </span>
+            </div>
+            <p className="text-xs opacity-60 mb-3 line-clamp-2">{tool.description}</p>
+            <div className="flex items-center gap-2 border-t-2 border-black/10 pt-2">
+                <span className="text-sm">{icon}</span>
+                <span className="text-[10px] font-mono opacity-50 truncate">{tool.providerName}</span>
+            </div>
+        </div>
+    );
+}
+
+function EmptyState({ message }: { message: string }) {
+    return (
+        <div className="border-4 border-dashed border-black p-12 text-center bg-neo-white">
+            <span className="text-3xl block mb-3">🔍</span>
+            <p className="font-black uppercase">{message}</p>
+            <p className="text-xs opacity-50 mt-1">Try a different search term</p>
         </div>
     );
 }

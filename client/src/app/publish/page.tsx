@@ -1,11 +1,10 @@
 "use client";
 
-import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { Navbar } from "@/components/Navbar";
-import { useAccount, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
+import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useState, useEffect, useCallback } from "react";
 import { REGISTRY_ADDRESS, REGISTRY_ABI } from "@/config/contracts";
-import { parseEther, namehash, keccak256, toBytes, createPublicClient, http } from "viem";
+import { namehash, keccak256, toBytes, createPublicClient, http } from "viem";
 import { sepolia } from "viem/chains";
 
 const ENS_REGISTRY = "0x00000000000C2E074eC69A0dFb2997BA6C7d2e1e" as const;
@@ -52,6 +51,18 @@ function useEnsAvailability(toolName: string) {
     }, [toolName, check]);
 
     return { status, ensName };
+}
+
+function WalletConnectBtn() {
+    const { connect, connectors } = useConnect();
+    return (
+        <button
+            onClick={() => connect({ connector: connectors[0] })}
+            className="bg-neo-secondary border-4 border-black px-6 py-3 text-sm font-black uppercase shadow-[4px_4px_0px_0px_#000] hover:shadow-[2px_2px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+        >
+            Connect Wallet
+        </button>
+    );
 }
 
 export default function PublishPage() {
@@ -106,13 +117,13 @@ export default function PublishPage() {
 
     const handleRegister = () => {
         if (!name || !endpoint || ensStatus === "taken") return;
-        const caps = capabilities ? capabilities.split(",").map((c) => c.trim()) : [name];
+        const cats = capabilities ? capabilities.split(",").map((c) => c.trim()) : [name];
         const fullEnsName = `${name}.${PARENT_DOMAIN}`;
         writeContract({
             address: REGISTRY_ADDRESS,
             abi: REGISTRY_ABI,
             functionName: "registerAgent",
-            args: [fullEnsName, endpoint, caps, parseEther("0")],
+            args: [fullEnsName, endpoint, cats],
             chainId: 16602,
         });
     };
@@ -142,7 +153,7 @@ export default function PublishPage() {
                         <span className="text-4xl mb-4 block">🔐</span>
                         <p className="font-black text-lg uppercase mb-4">Connect Your Wallet to Register</p>
                         <p className="text-sm opacity-60 mb-6">You need a wallet on 0G Chain Testnet to register a tool on-chain.</p>
-                        <ConnectButton />
+                        <WalletConnectBtn />
                     </div>
                 ) : (
                     <div className="border-4 border-black p-6 bg-neo-white shadow-[6px_6px_0px_0px_#000]">
