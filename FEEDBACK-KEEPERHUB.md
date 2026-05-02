@@ -22,11 +22,11 @@ Orchestrator → reputation.ts → KeeperHub MCP → 0G Chain (ReputationTracker
 
 ### Tools Used
 
-| Tool | Purpose |
-|------|---------|
-| `ai_generate_workflow` | AI-generated DeFi workflows from natural language |
-| `execute_workflow` | Execute a generated workflow |
-| `list_workflows` | Enumerate available workflows |
+| Tool                    | Purpose                                               |
+| ----------------------- | ----------------------------------------------------- |
+| `ai_generate_workflow`  | AI-generated DeFi workflows from natural language     |
+| `execute_workflow`      | Execute a generated workflow                          |
+| `list_workflows`        | Enumerate available workflows                         |
 | `execute_contract_call` | Direct smart contract writes (reputation on 0G Chain) |
 
 ---
@@ -52,6 +52,7 @@ Orchestrator → reputation.ts → KeeperHub MCP → 0G Chain (ReputationTracker
 **Problem:** We needed to call our ReputationTracker contract on 0G Chain (chainId: 16602). KeeperHub's `execute_contract_call` accepts a `network` parameter, but the supported networks aren't listed anywhere in documentation.
 
 **What we did:**
+
 ```typescript
 await callKeeperHub(apiKey, "execute_contract_call", {
   network: "16602", // 0G Chain testnet — does this work?
@@ -73,11 +74,13 @@ await callKeeperHub(apiKey, "execute_contract_call", {
 **Problem:** `execute_workflow` requires a Turnkey-managed wallet with funds. During a hackathon, getting testnet funds into a Turnkey wallet is a multi-step process that's not well-documented.
 
 **Reproduction:**
+
 ```json
-{"error": {"code": -32000, "message": "Insufficient funds for execution"}}
+{ "error": { "code": -32000, "message": "Insufficient funds for execution" } }
 ```
 
-**Suggestion:** 
+**Suggestion:**
+
 - Provide a "dry-run" mode that simulates execution without funds
 - Or: support user-provided private keys for signing (like how Uniswap's API works with `swapper` address)
 - Or: auto-fund from a testnet faucet on first execution
@@ -89,6 +92,7 @@ await callKeeperHub(apiKey, "execute_contract_call", {
 **Problem:** MCP sessions expire after some time (seems like ~24h?) but there's no explicit expiry header or event. Our code had to detect 401/403 and re-initialize.
 
 **What we implemented:**
+
 ```typescript
 if (response.status === 401 || response.status === 403) {
   cachedSessionId = null;
@@ -114,8 +118,10 @@ if (response.status === 401 || response.status === 403) {
 **Problem:** When passing complex types to `execute_contract_call`, the ABI encoding for `bytes32` parameters required manual conversion. The tool doesn't auto-encode string→bytes32.
 
 **What we had to do:**
+
 ```typescript
-const agentIdBytes32 = "0x" + Buffer.from("orchestrator").toString("hex").padEnd(64, "0");
+const agentIdBytes32 =
+  "0x" + Buffer.from("orchestrator").toString("hex").padEnd(64, "0");
 ```
 
 **Suggestion:** Accept human-readable inputs and auto-encode based on the ABI type, or at minimum document the expected encoding format for each Solidity type.
@@ -124,13 +130,13 @@ const agentIdBytes32 = "0x" + Buffer.from("orchestrator").toString("hex").padEnd
 
 ## Integration Quality Score
 
-| Aspect | Score | Notes |
-|--------|-------|-------|
-| API ergonomics | 9/10 | Clean MCP, great tool design |
-| Documentation | 6/10 | Missing network list, session lifecycle |
-| Reliability | 8/10 | Solid during hackathon, no random failures |
-| DX (getting started) | 7/10 | Fast key provisioning, but wallet funding blocks execution |
-| Feature completeness | 8/10 | Has what we need, streaming would be nice |
+| Aspect               | Score | Notes                                                      |
+| -------------------- | ----- | ---------------------------------------------------------- |
+| API ergonomics       | 9/10  | Clean MCP, great tool design                               |
+| Documentation        | 6/10  | Missing network list, session lifecycle                    |
+| Reliability          | 8/10  | Solid during hackathon, no random failures                 |
+| DX (getting started) | 7/10  | Fast key provisioning, but wallet funding blocks execution |
+| Feature completeness | 8/10  | Has what we need, streaming would be nice                  |
 
 ---
 

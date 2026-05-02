@@ -219,16 +219,16 @@
 
 ## Sponsor Integration Checklist
 
-| Sponsor       | Layer       | Status | What We Use                                                                 |
-| ------------- | ----------- | ------ | --------------------------------------------------------------------------- |
-| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE           |
+| Sponsor       | Layer       | Status | What We Use                                                                    |
+| ------------- | ----------- | ------ | ------------------------------------------------------------------------------ |
+| **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE              |
 | **0G**        | Storage     | ✅     | Agent memory + conversation logs (real KV writes via SDK Batcher, tx verified) |
-| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 4 agents registered             |
-| **Gensyn**    | AXL         | ✅     | 4-node P2P mesh, MCP routing verified, Python routers running               |
-| **Uniswap**   | Trading API | ✅     | LIVE quotes (1 ETH = 2229 USDC), real Trading API integration               |
-| **KeeperHub** | MCP         | ✅     | LIVE session-based MCP (ai_generate_workflow, execute_workflow working)     |
-| **ENS**       | Identity    | ✅     | Local registry + resolution code (Sepolia registration not needed for demo) |
-| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                       |
+| **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 4 agents registered                |
+| **Gensyn**    | AXL         | ✅     | 4-node P2P mesh, MCP routing verified, Python routers running                  |
+| **Uniswap**   | Trading API | ✅     | LIVE quotes (1 ETH = 2229 USDC), real Trading API integration                  |
+| **KeeperHub** | MCP         | ✅     | LIVE session-based MCP (ai_generate_workflow, execute_workflow working)        |
+| **ENS**       | Identity    | ✅     | Local registry + resolution code (Sepolia registration not needed for demo)    |
+| **x402**      | Payments    | ✅     | HTTP 402 middleware + payment proofs on all providers                          |
 
 ---
 

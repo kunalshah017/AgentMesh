@@ -13,7 +13,9 @@ interface ProtocolData {
  * Get protocol TVL and metrics.
  * Uses DeFiLlama protocols API.
  */
-export async function getProtocolStats(protocol: string): Promise<ProtocolData> {
+export async function getProtocolStats(
+  protocol: string,
+): Promise<ProtocolData> {
   console.log(`📈 Getting stats for ${protocol}...`);
 
   try {
@@ -32,7 +34,8 @@ export async function getProtocolStats(protocol: string): Promise<ProtocolData> 
     };
 
     const currentTvl = data.tvl[data.tvl.length - 1]?.totalLiquidityUSD ?? 0;
-    const weekAgoTvl = data.tvl[data.tvl.length - 8]?.totalLiquidityUSD ?? currentTvl;
+    const weekAgoTvl =
+      data.tvl[data.tvl.length - 8]?.totalLiquidityUSD ?? currentTvl;
     const change = ((currentTvl - weekAgoTvl) / weekAgoTvl) * 100;
 
     return {

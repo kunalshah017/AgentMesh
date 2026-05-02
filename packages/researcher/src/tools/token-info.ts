@@ -38,7 +38,12 @@ export async function getTokenInfo(token: string): Promise<TokenData> {
 
     const data = (await response.json()) as Record<
       string,
-      { usd: number; usd_24h_change: number; usd_market_cap: number; usd_24h_vol: number }
+      {
+        usd: number;
+        usd_24h_change: number;
+        usd_market_cap: number;
+        usd_24h_vol: number;
+      }
     >;
 
     const info = data[coinId];

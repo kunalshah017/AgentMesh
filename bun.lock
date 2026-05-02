@@ -55,6 +55,19 @@
         "typescript": "^5.8.0",
       },
     },
+    "packages/gas-optimizer": {
+      "name": "@agentmesh/gas-optimizer",
+      "version": "0.1.0",
+      "dependencies": {
+        "@agentmesh/shared": "*",
+        "express": "^5.1.0",
+      },
+      "devDependencies": {
+        "@types/bun": "latest",
+        "@types/express": "^5.0.0",
+        "typescript": "^5.8.0",
+      },
+    },
     "packages/orchestrator": {
       "name": "@agentmesh/orchestrator",
       "version": "0.1.0",
@@ -126,6 +139,8 @@
     "@agentmesh/contracts": ["@agentmesh/contracts@workspace:packages/contracts"],
 
     "@agentmesh/executor": ["@agentmesh/executor@workspace:packages/executor"],
+
+    "@agentmesh/gas-optimizer": ["@agentmesh/gas-optimizer@workspace:packages/gas-optimizer"],
 
     "@agentmesh/orchestrator": ["@agentmesh/orchestrator@workspace:packages/orchestrator"],
 

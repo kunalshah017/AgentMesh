@@ -11,6 +11,7 @@ import {
   callMCPService,
   PaymentRequiredError,
   discoverToolsByCapability,
+  discoverToolsFromRegistry,
   createPaymentProof,
   storeConversationLog,
   recordReputation,
@@ -59,6 +60,25 @@ export class OrchestratorAgent {
   }
 
   /**
+   * Refresh tool registry from on-chain AgentRegistry.
+   * Merges on-chain agents with locally registered ones (deduplicates by ensName).
+   */
+  async refreshRegistry(): Promise<void> {
+    try {
+      const onChainAgents = await discoverToolsFromRegistry();
+      const existingNames = new Set(this.toolRegistry.map((t) => t.ensName));
+      for (const agent of onChainAgents) {
+        if (!existingNames.has(agent.ensName)) {
+          this.toolRegistry.push(agent);
+          this.emit({ type: "tool_discovered", tool: agent });
+        }
+      }
+    } catch {
+      // Non-critical — continue with local registry
+    }
+  }
+
+  /**
    * Subscribe to agent events (for dashboard SSE).
    */
   onEvent(listener: (event: AgentEvent) => void): () => void {
@@ -87,6 +107,9 @@ export class OrchestratorAgent {
     };
 
     this.emit({ type: "task_created", task });
+
+    // Refresh tool registry from on-chain before processing
+    await this.refreshRegistry();
 
     try {
       // Step 1: Plan subtasks using LLM

@@ -1,6 +1,12 @@
 // Check Balance Tool — real on-chain queries via viem
 
-import { createPublicClient, http, formatEther, formatUnits, type Address } from "viem";
+import {
+  createPublicClient,
+  http,
+  formatEther,
+  formatUnits,
+  type Address,
+} from "viem";
 import { mainnet } from "viem/chains";
 
 interface BalanceResult {
@@ -28,7 +34,10 @@ const ERC20_ABI = [
 const TOKENS: Record<string, { address: Address; decimals: number }> = {
   USDC: { address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48", decimals: 6 },
   USDT: { address: "0xdAC17F958D2ee523a2206206994597C13D831ec7", decimals: 6 },
-  stETH: { address: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84", decimals: 18 },
+  stETH: {
+    address: "0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84",
+    decimals: 18,
+  },
   WETH: { address: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", decimals: 18 },
 };
 
@@ -40,9 +49,12 @@ export async function checkBalance(
   address: string,
   token?: string,
 ): Promise<BalanceResult> {
-  console.log(`💰 Checking balance for ${address} (token: ${token ?? "all"})...`);
+  console.log(
+    `💰 Checking balance for ${address} (token: ${token ?? "all"})...`,
+  );
 
-  const rpcUrl = process.env.ETH_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
+  const rpcUrl =
+    process.env.ETH_RPC_URL ?? "https://ethereum-rpc.publicnode.com";
   const client = createPublicClient({
     chain: mainnet,
     transport: http(rpcUrl),
@@ -59,13 +71,21 @@ export async function checkBalance(
       "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd",
     );
     if (priceRes.ok) {
-      const priceData = (await priceRes.json()) as { ethereum?: { usd?: number } };
+      const priceData = (await priceRes.json()) as {
+        ethereum?: { usd?: number };
+      };
       ethPrice = priceData.ethereum?.usd ?? ethPrice;
     }
-  } catch { /* use fallback */ }
+  } catch {
+    /* use fallback */
+  }
 
   // Query ETH balance
-  if (!token || token.toUpperCase() === "ETH" || token.toUpperCase() === "ALL") {
+  if (
+    !token ||
+    token.toUpperCase() === "ETH" ||
+    token.toUpperCase() === "ALL"
+  ) {
     try {
       const ethBal = await client.getBalance({ address: addr });
       const ethFormatted = formatEther(ethBal);
@@ -83,9 +103,10 @@ export async function checkBalance(
   }
 
   // Query ERC-20 tokens
-  const tokensToCheck = token && token.toUpperCase() !== "ETH" && token.toUpperCase() !== "ALL"
-    ? { [token.toUpperCase()]: TOKENS[token.toUpperCase()] }
-    : TOKENS;
+  const tokensToCheck =
+    token && token.toUpperCase() !== "ETH" && token.toUpperCase() !== "ALL"
+      ? { [token.toUpperCase()]: TOKENS[token.toUpperCase()] }
+      : TOKENS;
 
   for (const [symbol, info] of Object.entries(tokensToCheck)) {
     if (!info) continue;
@@ -115,7 +136,9 @@ export async function checkBalance(
     }
   }
 
-  console.log(`   ✅ Balance check complete: ${balances.length} tokens, total $${totalUsd.toFixed(2)}`);
+  console.log(
+    `   ✅ Balance check complete: ${balances.length} tokens, total $${totalUsd.toFixed(2)}`,
+  );
 
   return {
     address,

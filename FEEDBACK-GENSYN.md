@@ -20,12 +20,12 @@ Orchestrator (9002) ←→ AXL Mesh ←→ Researcher (9012)
 
 ### Features Used
 
-| Feature | Purpose |
-|---------|---------|
-| MCP Routing (`/mcp/{peer_key}/{service}`) | Cross-node tool calls |
-| Topology API (`/api/topology`) | Network graph visualization |
-| Ed25519 key pairs | Node identity + addressing |
-| TCP transport (port 7000) | Node-to-node communication |
+| Feature                                   | Purpose                     |
+| ----------------------------------------- | --------------------------- |
+| MCP Routing (`/mcp/{peer_key}/{service}`) | Cross-node tool calls       |
+| Topology API (`/api/topology`)            | Network graph visualization |
+| Ed25519 key pairs                         | Node identity + addressing  |
+| TCP transport (port 7000)                 | Node-to-node communication  |
 
 ---
 
@@ -50,6 +50,7 @@ Orchestrator (9002) ←→ AXL Mesh ←→ Researcher (9012)
 **Problem:** AXL requires Go 1.26.2 but the internal gVisor dependency (`inet.af/netstack`) needs `GOTOOLCHAIN=go1.25.5`. Building with the default toolchain fails with cryptic errors about missing symbols.
 
 **Reproduction:**
+
 ```bash
 $ go build ./cmd/node
 # inet.af/netstack/tcpip
@@ -57,6 +58,7 @@ $ go build ./cmd/node
 ```
 
 **Fix we applied:**
+
 ```bash
 export GOTOOLCHAIN=go1.25.5
 ```
@@ -70,13 +72,22 @@ export GOTOOLCHAIN=go1.25.5
 **Problem:** Our entire stack is TypeScript (Bun + Next.js). Interacting with AXL required raw `fetch()` calls to HTTP endpoints. There's no `@gensyn/axl-client` npm package.
 
 **What we had to do:**
+
 ```typescript
 // Every AXL call is a manual fetch with JSON-RPC body
-const response = await fetch(`http://127.0.0.1:${axlPort}/mcp/${peerKey}/${service}`, {
-  method: "POST",
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ jsonrpc: "2.0", method: "tools/call", id: 1, params: { name, arguments: args } }),
-});
+const response = await fetch(
+  `http://127.0.0.1:${axlPort}/mcp/${peerKey}/${service}`,
+  {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      method: "tools/call",
+      id: 1,
+      params: { name, arguments: args },
+    }),
+  },
+);
 ```
 
 **Suggestion:** A thin TypeScript client (`axl-client`) with typed methods would dramatically lower integration friction for JS/TS hackathon projects. Even a 50-line wrapper with proper types would help.

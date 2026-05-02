@@ -7,10 +7,10 @@
 
 ## Tools Used
 
-| Tool | Purpose | Scope |
-|------|---------|-------|
-| GitHub Copilot (Claude) | Code generation, architecture design, debugging | All packages |
-| 0G Compute (qwen-2.5-7b-instruct) | Runtime LLM inference for task planning | Orchestrator agent |
+| Tool                              | Purpose                                         | Scope              |
+| --------------------------------- | ----------------------------------------------- | ------------------ |
+| GitHub Copilot (Claude)           | Code generation, architecture design, debugging | All packages       |
+| 0G Compute (qwen-2.5-7b-instruct) | Runtime LLM inference for task planning         | Orchestrator agent |
 
 ---
 
