@@ -66,6 +66,8 @@ export function useOrchestrator(
   signMessageRef.current = signMessage;
   const onAuthRejectedRef = useRef(onAuthRejected);
   onAuthRejectedRef.current = onAuthRejected;
+  const isAuthenticatedRef = useRef(isAuthenticated);
+  isAuthenticatedRef.current = isAuthenticated;
 
   const addEvent = useCallback((event: AgentEvent) => {
     setEvents((prev) => [...prev, { ...event, _ts: Date.now() }]);
@@ -226,7 +228,11 @@ export function useOrchestrator(
       localStorage.removeItem(AUTH_CACHE_KEY);
     }
 
-    if (walletAddress && wsRef.current?.readyState === WebSocket.OPEN) {
+    if (
+      walletAddress &&
+      wsRef.current?.readyState === WebSocket.OPEN &&
+      !isAuthenticatedRef.current
+    ) {
       authenticateWs(wsRef.current);
     }
   }, [walletAddress]);
@@ -249,7 +255,7 @@ export function useOrchestrator(
         return;
       }
 
-      if (!isAuthenticated) {
+      if (!isAuthenticatedRef.current) {
         // Wallet connected but WS auth not complete — retry auth
         if (wsRef.current?.readyState === WebSocket.OPEN) {
           authenticateWs(wsRef.current);
