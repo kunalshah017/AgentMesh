@@ -1,4 +1,5 @@
 import type { ConnectionStatus } from "@/hooks/useOrchestrator";
+import Link from "next/link";
 
 interface HeaderProps {
   status: ConnectionStatus;
@@ -10,14 +11,18 @@ export function Header({ status, eventCount }: HeaderProps) {
     <header className="h-20 flex items-center justify-between px-6 border-b-4 border-black bg-neo-white">
       {/* Logo */}
       <div className="flex items-center gap-4">
-        <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1">
-          <h1 className="text-2xl font-black tracking-tighter uppercase text-black">
-            AGENT<span className="text-neo-white">MESH</span>
-          </h1>
-        </div>
-        <span className="text-xs font-bold uppercase tracking-widest text-black hidden md:inline">
-          Decentralized Agent Marketplace
-        </span>
+        <Link href="/">
+          <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1 cursor-pointer">
+            <h1 className="text-2xl font-black tracking-tighter uppercase text-black">
+              AGENT<span className="text-neo-white">MESH</span>
+            </h1>
+          </div>
+        </Link>
+        <nav className="hidden md:flex items-center gap-3">
+          <Link href="/" className="text-xs font-black uppercase hover:text-neo-accent transition-colors">Home</Link>
+          <Link href="/explore" className="text-xs font-black uppercase hover:text-neo-accent transition-colors">Explore</Link>
+          <Link href="/publish" className="text-xs font-black uppercase hover:text-neo-accent transition-colors">Publish</Link>
+        </nav>
       </div>
 
       {/* Status badges */}

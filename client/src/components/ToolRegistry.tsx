@@ -77,6 +77,21 @@ export function ToolRegistry() {
                 <span className="mono opacity-60">0x0B05...da28</span>
             </div>
 
+            {/* Architecture indicator */}
+            <div className="px-4 py-2 border-b-2 border-black bg-neo-bg flex items-center gap-3">
+                <div className="flex items-center gap-1">
+                    <span className="text-sm">🧠</span>
+                    <span className="text-[9px] font-black uppercase bg-black text-white px-1.5 py-0.5">1 Brain</span>
+                    <span className="text-[9px] opacity-50 ml-1">0G Compute</span>
+                </div>
+                <span className="text-[9px] font-black">+</span>
+                <div className="flex items-center gap-1">
+                    <span className="text-sm">🔧</span>
+                    <span className="text-[9px] font-black uppercase bg-neo-white border border-black px-1.5 py-0.5">{tools.length - 1} Tools</span>
+                    <span className="text-[9px] opacity-50 ml-1">No LLM</span>
+                </div>
+            </div>
+
             {/* Tool list */}
             <div className="flex-1 overflow-y-auto p-3 space-y-2">
                 {tools.map((tool) => {
