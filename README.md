@@ -189,21 +189,23 @@ Every conversation (goal → subtasks → results) is stored to 0G decentralized
 
 Every claim is backed by on-chain or verifiable evidence:
 
-| Claim                      | Evidence                                 | Link                                                                                                                    |
-| -------------------------- | ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| AgentRegistry deployed     | 5 agents registered on 0G Chain          | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x0B05236c972DbFCe91519a183980F0D5fFd9da28)                    |
-| ReputationTracker deployed | Contract live on 0G Chain                | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4)                    |
-| Reputation tx (researcher) | recordTask confirmed, block 31120216     | [tx 0xea2ca6c...](https://chainscan-newton.0g.ai/tx/0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3) |
-| Reputation tx (executor)   | recordTask confirmed, block 31120275     | [tx 0x06caf93...](https://chainscan-newton.0g.ai/tx/0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd) |
-| KeeperHub → 0G Chain       | Reputation updated via KeeperHub MCP     | Confirmed in logs: "Reputation updated on 0G Chain via KeeperHub"                                                       |
-| 0G Storage KV write        | Real tx submitted via SDK Batcher        | tx `0xe25088c93e7a36b89d3af259f5811385b24f567701a02ef5a88ca172404199cb`                                                 |
-| Uniswap Trading API        | Live mainnet quote (1 ETH = 2304 USDC)   | Quote via `POST /v1/quote`                                                                                              |
-| x402 EIP-712 signatures    | Real `signTypedData` + `verifyTypedData` | Verified in integration tests                                                                                           |
-| AXL 4-node mesh            | MCP routing between all peers            | `GET /api/topology` returns 4 connected nodes                                                                           |
-| 0G Compute LLM             | Task planning via qwen-2.5-7b-instruct   | OpenAI-compatible endpoint                                                                                              |
-| KeeperHub MCP              | Session-based tool calls                 | `ai_generate_workflow` + `list_workflows` verified                                                                      |
-| pay-with-any-token         | Uniswap EXACT_OUTPUT quotes              | 0.000434 ETH → 1.00 USDC                                                                                                |
-| Live Frontend              | Marketplace + Dashboard deployed         | [agentmesh-app.vercel.app](https://agentmesh-app.vercel.app)                                                            |
+| Claim                      | Evidence                                                        | Link                                                                                                                    |
+| -------------------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| AgentRegistry deployed     | 5 agents registered on 0G Chain                                 | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x0B05236c972DbFCe91519a183980F0D5fFd9da28)                    |
+| ReputationTracker deployed | Contract live on 0G Chain                                       | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4)                    |
+| Reputation tx (researcher) | recordTask confirmed, block 31120216                            | [tx 0xea2ca6c...](https://chainscan-newton.0g.ai/tx/0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3) |
+| Reputation tx (executor)   | recordTask confirmed, block 31120275                            | [tx 0x06caf93...](https://chainscan-newton.0g.ai/tx/0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd) |
+| Reputation tx (analyst)    | recordTask confirmed, block 31125183                            | [tx 0xcd21f6d...](https://chainscan-newton.0g.ai/tx/0xcd21f6d0d04e2c4367efa5391b5e0a7d950aade4e47f0661765b94ec6298dbac) |
+| Reputation tx (gas-opt)    | recordTask confirmed, block 31125243                            | [tx 0xea6d5e5...](https://chainscan-newton.0g.ai/tx/0xea6d5e57dea6dc055e3a74192fa8e6210fd9eb65226140e60939cf18e972b13e) |
+| KeeperHub → 0G Chain       | execute_contract_call accepted (exec ID: pydj7vykkmw60xt4bsfts) | KeeperHub wallet unfunded on 0G; proves network support                                                                 |
+| KeeperHub MCP session      | search_plugins + tools/list (30 tools)                          | Real MCP session with `mcp-session-id` header                                                                           |
+| 0G Storage KV write        | Real tx submitted via SDK Batcher                               | tx `0xe25088c93e7a36b89d3af259f5811385b24f567701a02ef5a88ca172404199cb`                                                 |
+| Uniswap Trading API        | Live mainnet quote (1 ETH = 2304 USDC)                          | Quote via `POST /v1/quote`                                                                                              |
+| x402 EIP-712 signatures    | Real `signTypedData` + `verifyTypedData`                        | Verified in integration tests                                                                                           |
+| AXL 4-node mesh            | MCP routing between all peers                                   | `GET /api/topology` returns 4 connected nodes                                                                           |
+| 0G Compute LLM             | Task planning via qwen-2.5-7b-instruct                          | OpenAI-compatible endpoint                                                                                              |
+| pay-with-any-token         | Uniswap EXACT_OUTPUT quotes                                     | 0.000434 ETH → 1.00 USDC                                                                                                |
+| Live Frontend              | Marketplace + Dashboard deployed                                | [agentmesh-app.vercel.app](https://agentmesh-app.vercel.app)                                                            |
 
 ---
 

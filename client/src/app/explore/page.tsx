@@ -160,6 +160,14 @@ export default function ExplorePage() {
                                             <div className="text-xs font-black">{Math.round(tool.reputation.successRate)}%</div>
                                             <div className="text-[9px] uppercase opacity-50">success</div>
                                         </div>
+                                        <a
+                                            href={`https://chainscan-newton.0g.ai/address/0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="text-[9px] font-bold text-blue-600 hover:underline"
+                                        >
+                                            ⛓️ Verified
+                                        </a>
                                     </>
                                 )}
                                 <div className="ml-auto">
