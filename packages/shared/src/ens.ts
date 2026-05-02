@@ -29,14 +29,9 @@ export async function resolveAgentFromENS(
   const client = getEnsClient(rpcUrl);
   const normalized = normalize(ensName);
 
-  const [description, price] = await Promise.all([
-    client
-      .getEnsText({ name: normalized, key: "description" })
-      .catch(() => null),
-    client
-      .getEnsText({ name: normalized, key: "x402.price" })
-      .catch(() => null),
-  ]);
+  const description = await client
+    .getEnsText({ name: normalized, key: "description" })
+    .catch(() => null);
 
   const name = ensName.split(".")[0];
 
@@ -45,7 +40,6 @@ export async function resolveAgentFromENS(
     ensName,
     axlPeerKey: `${name}-node-key`,
     capabilities: description ? [description] : [],
-    pricePerCall: price?.replace(" USDC", "") ?? "0.01",
   };
 }
 

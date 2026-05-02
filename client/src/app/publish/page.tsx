@@ -58,7 +58,6 @@ export default function PublishPage() {
     const { isConnected, address } = useAccount();
     const [name, setName] = useState("");
     const [capabilities, setCapabilities] = useState("");
-    const [price, setPrice] = useState("0.01");
     const [endpoint, setEndpoint] = useState("");
     const [ensStatus2, setEnsStatus2] = useState<"idle" | "registering" | "success" | "error">("idle");
     const [ensError, setEnsError] = useState("");
@@ -90,7 +89,6 @@ export default function PublishPage() {
                         ownerAddress: address,
                         endpoint: endpoint || undefined,
                         description: capabilities,
-                        price,
                     }),
                 });
                 if (!res.ok) {
@@ -104,7 +102,7 @@ export default function PublishPage() {
             }
         };
         registerEns();
-    }, [isSuccess, address, name, endpoint, capabilities, price, ensStatus2]);
+    }, [isSuccess, address, name, endpoint, capabilities, ensStatus2]);
 
     const handleRegister = () => {
         if (!name || !endpoint || ensStatus === "taken") return;
@@ -114,7 +112,7 @@ export default function PublishPage() {
             address: REGISTRY_ADDRESS,
             abi: REGISTRY_ABI,
             functionName: "registerAgent",
-            args: [fullEnsName, endpoint, caps, parseEther(price)],
+            args: [fullEnsName, endpoint, caps, parseEther("0")],
             chainId: 16602,
         });
     };
@@ -218,21 +216,6 @@ export default function PublishPage() {
                                 />
                             </div>
 
-                            {/* Base Price (advertised) */}
-                            <div>
-                                <label className="text-xs font-black uppercase block mb-1">Base Price (USDC) <span className="opacity-50">— advertised starting price</span></label>
-                                <input
-                                    type="text"
-                                    value={price}
-                                    onChange={(e) => setPrice(e.target.value)}
-                                    placeholder="0.01"
-                                    className="w-full border-4 border-black p-3 text-sm font-bold bg-neo-bg focus:outline-none focus:border-neo-accent"
-                                />
-                                <p className="text-[10px] mt-1 opacity-50">
-                                    Display price for the marketplace. Actual pricing is controlled by your server via x402 (HTTP 402 responses).
-                                </p>
-                            </div>
-
                             {/* Submit */}
                             <button
                                 onClick={handleRegister}
@@ -284,8 +267,8 @@ export default function PublishPage() {
                     <pre className="text-[11px] overflow-x-auto whitespace-pre-wrap">
                         {`bun run packages/contracts/scripts/register-tool.ts \\
   --name "${name || "my-tool"}" \\
-  --capabilities "${capabilities || "capability-1,capability-2"}" \\
-  --price "${price || "0.01"}"`}
+  --endpoint "${endpoint || "https://your-server.com/mcp"}" \\
+  --capabilities "${capabilities || "capability-1,capability-2"}"`}
                     </pre>
                 </div>
             </main>

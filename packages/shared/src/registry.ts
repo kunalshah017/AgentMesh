@@ -49,7 +49,6 @@ export async function discoverToolsFromRegistry(): Promise<AgentIdentity[]> {
           axlPeerKey: axlPeerKey.startsWith("http") ? "" : axlPeerKey,
           endpoint: axlPeerKey.startsWith("http") ? axlPeerKey : undefined,
           capabilities: [...capabilities],
-          pricePerCall: ethers.formatUnits(pricePerCall, 6), // USDC 6 decimals
         });
       } catch (err) {
         console.log(`   ⚠️ Failed to decode agent ${id}: ${err}`);

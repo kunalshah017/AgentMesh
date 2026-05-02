@@ -24,8 +24,7 @@ bun -e "
 const { discoverToolsFromRegistry } = await import('./packages/shared/dist/registry.js');
 const agents = await discoverToolsFromRegistry();
 for (const a of agents) {
-  const price = Number(a.pricePerCall) / 1e6;
-  console.log('  ✓ ' + a.ensName.padEnd(32) + a.capabilities.join(', ').padEnd(40) + price.toFixed(3) + ' USDC/call');
+  console.log('  ✓ ' + a.ensName.padEnd(32) + a.capabilities.join(', ').padEnd(40) + (a.endpoint ? '🌐 ' + a.endpoint : '🔑 AXL'));
 }
 " 2>&1 | grep -v "⛓️"
 echo ""

@@ -7,7 +7,6 @@ export interface AgentIdentity {
   axlPeerKey: string;
   endpoint?: string; // HTTP/MCP endpoint URL for external tool calling
   capabilities: string[];
-  pricePerCall: string; // USDC amount as string
 }
 
 // --- Discovered Tool (from tools/list on external MCP servers) ---
@@ -99,7 +98,6 @@ export const AgentIdentitySchema = z.object({
   ensName: z.string(),
   axlPeerKey: z.string(),
   capabilities: z.array(z.string()),
-  pricePerCall: z.string(),
 });
 
 export const MCPRequestSchema = z.object({

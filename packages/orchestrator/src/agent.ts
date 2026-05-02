@@ -204,7 +204,6 @@ export class OrchestratorAgent {
             axlPeerKey: "",
             endpoint: catalogTool.providerEndpoint,
             capabilities: [catalogTool.name],
-            pricePerCall: "0.01",
           };
         } else {
           // 2. Fallback: match by capability in registry
@@ -235,7 +234,8 @@ export class OrchestratorAgent {
 
           // Record reputation on 0G Chain via KeeperHub (non-blocking)
           const responseTime = Date.now() - task.createdAt;
-          const earned = parseFloat(tool.pricePerCall ?? "0.01") * 1e6; // USDC 6 decimals
+          const earned =
+            (subtask.payment ? parseFloat(subtask.payment.amount) : 0) * 1e6; // USDC 6 decimals
           recordReputation(tool.ensName, true, responseTime, earned)
             .then((r) => {
               if (r.status !== "skipped") {
@@ -490,7 +490,7 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
           token?: string;
           address?: string;
         };
-        const amount = paymentRequired.amount ?? tool.pricePerCall ?? "0.01";
+        const amount = paymentRequired.amount ?? "0.01";
         const payTo = paymentRequired.address ?? tool.ensName;
 
         console.log(`💰 Payment required: ${amount} USDC to ${payTo}`);

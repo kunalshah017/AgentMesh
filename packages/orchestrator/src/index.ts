@@ -66,7 +66,6 @@ async function main() {
         "token-info",
         "protocol-stats",
       ],
-      pricePerCall: "0.01",
     });
     agent.registerTool({
       name: "Risk Analyst",
@@ -74,7 +73,6 @@ async function main() {
       axlPeerKey:
         "f2d4eea2662c03e11ce94ae55a709fef9e24c69a80d076ba778dbad83c815372",
       capabilities: ["risk-analysis", "risk-assess", "contract-audit"],
-      pricePerCall: "0.03",
     });
     agent.registerTool({
       name: "Executor",
@@ -88,7 +86,6 @@ async function main() {
         "check-balance",
         "pay-with-any-token",
       ],
-      pricePerCall: "0.05",
     });
   }
 
