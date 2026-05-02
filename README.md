@@ -181,6 +181,51 @@ Every conversation (goal → subtasks → results) is stored to 0G decentralized
 4. **Modular** — Any agent can join the mesh by running an AXL node and registering its MCP tools.
 5. **Auditable** — Every decision stored on-chain + decentralized storage.
 
+---
+
+## Verifiable Artifacts
+
+Every claim is backed by on-chain or verifiable evidence:
+
+| Claim | Evidence | Link |
+|-------|----------|------|
+| AgentRegistry deployed | 4 agents registered on 0G Chain | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x0B05236c972DbFCe91519a183980F0D5fFd9da28) |
+| ReputationTracker deployed | Contract live on 0G Chain | [chainscan.0g.ai](https://chainscan-newton.0g.ai/address/0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4) |
+| 0G Storage KV write | Real tx submitted via SDK Batcher | tx `0xe25088c93e7a36b89d3af259f5811385b24f567701a02ef5a88ca172404199cb` |
+| Uniswap Trading API | Live mainnet quote (1 ETH = 2304 USDC) | Quote via `POST /v1/quote` |
+| x402 EIP-712 signatures | Real `signTypedData` + `verifyTypedData` | Verified in integration tests |
+| AXL 4-node mesh | MCP routing between all peers | `GET /api/topology` returns 4 connected nodes |
+| 0G Compute LLM | Task planning via qwen-2.5-7b-instruct | OpenAI-compatible endpoint |
+| KeeperHub MCP | Session-based tool calls | `ai_generate_workflow` + `list_workflows` verified |
+| pay-with-any-token | Uniswap EXACT_OUTPUT quotes | 0.000434 ETH → 1.00 USDC |
+
+---
+
+## Known Limitations
+
+We believe in transparency. Here's what's real and what has constraints:
+
+1. **x402 payments are signature-only** — EIP-712 signatures are cryptographically valid, but no real USDC transfer settles (wallet has no Base Sepolia USDC). Production would need funded wallets.
+2. **Swap execution is quote-only** — Uniswap Trading API returns real mainnet quotes, but we don't broadcast swap transactions (would need funded wallet + approval flow).
+3. **0G Storage depends on community node** — We use `http://178.238.236.119:6789` (community KV node). If it goes offline, storage falls back to content-addressed hashes.
+4. **KeeperHub workflow execution requires Turnkey wallet funding** — `ai_generate_workflow` works, but `execute_workflow` needs a funded Turnkey wallet we haven't provisioned.
+5. **ENS is local registry** — We use a local JS map for agent discovery rather than on-chain Sepolia ENS (couldn't get Sepolia ETH from faucet in time).
+6. **Single-machine mesh** — All 4 AXL nodes run on localhost. Production would use separate machines/IPs.
+7. **No rate limiting** — Tool providers don't rate-limit requests (fine for demo, not for production).
+8. **Reputation writes cost gas** — Each `recordTask` call costs ~117K gas on 0G Chain. Production would batch updates.
+
+---
+
+## Builder Feedback
+
+We filed detailed integration feedback for sponsors:
+
+- [FEEDBACK.md](./FEEDBACK.md) — Uniswap Trading API
+- [FEEDBACK-GENSYN.md](./FEEDBACK-GENSYN.md) — Gensyn AXL P2P
+- [FEEDBACK-KEEPERHUB.md](./FEEDBACK-KEEPERHUB.md) — KeeperHub MCP
+
+---
+
 ## Team
 
 Built by [@kunalshah017](https://github.com/kunalshah017)
