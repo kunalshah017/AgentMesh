@@ -4,11 +4,11 @@ import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
 
 const TOOLS = [
-  { name: "orchestrator", ensName: "orchestrator.agentmesh.eth", icon: "🧠", role: "Brain", capabilities: ["task-planning", "tool-discovery", "orchestration"], color: "bg-red-100 border-red-400", type: "BRAIN" },
-  { name: "researcher", ensName: "researcher.agentmesh.eth", icon: "🔍", role: "DeFi Scanner", capabilities: ["defi-research", "scan-yields", "token-info"], color: "bg-blue-100 border-blue-400", type: "TOOL" },
-  { name: "analyst", ensName: "analyst.agentmesh.eth", icon: "⚠️", role: "Risk Assessment", capabilities: ["risk-analysis", "contract-audit"], color: "bg-yellow-100 border-yellow-400", type: "TOOL" },
-  { name: "executor", ensName: "executor.agentmesh.eth", icon: "🔧", role: "Onchain Execution", capabilities: ["execute-swap", "check-balance", "execute-deposit"], color: "bg-purple-100 border-purple-400", type: "TOOL" },
-  { name: "gas-optimizer", ensName: "gas-optimizer.agentmesh.eth", icon: "⛽", role: "Fee Prediction", capabilities: ["gas-prediction", "fee-estimation"], color: "bg-green-100 border-green-400", type: "TOOL" },
+  { name: "orchestrator", ensName: "orchestrator.agent-mesh.eth", icon: "🧠", role: "Brain", capabilities: ["task-planning", "tool-discovery", "orchestration"], color: "bg-red-100 border-red-400", type: "BRAIN" },
+  { name: "researcher", ensName: "researcher.agent-mesh.eth", icon: "🔍", role: "DeFi Scanner", capabilities: ["defi-research", "scan-yields", "token-info"], color: "bg-blue-100 border-blue-400", type: "TOOL" },
+  { name: "analyst", ensName: "analyst.agent-mesh.eth", icon: "⚠️", role: "Risk Assessment", capabilities: ["risk-analysis", "contract-audit"], color: "bg-yellow-100 border-yellow-400", type: "TOOL" },
+  { name: "executor", ensName: "executor.agent-mesh.eth", icon: "🔧", role: "Onchain Execution", capabilities: ["execute-swap", "check-balance", "execute-deposit"], color: "bg-purple-100 border-purple-400", type: "TOOL" },
+  { name: "gas-optimizer", ensName: "gas-optimizer.agent-mesh.eth", icon: "⛽", role: "Fee Prediction", capabilities: ["gas-prediction", "fee-estimation"], color: "bg-green-100 border-green-400", type: "TOOL" },
 ];
 
 const SPONSORS = [

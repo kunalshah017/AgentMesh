@@ -16,11 +16,11 @@ interface RegisteredTool {
 
 // On-chain registry data (fetched from orchestrator API or fallback to known state)
 const FALLBACK_REGISTRY: RegisteredTool[] = [
-    { ensName: "orchestrator.agentmesh.eth", capabilities: ["task-planning", "tool-discovery", "orchestration"], pricePerCall: "0", isActive: true },
-    { ensName: "researcher.agentmesh.eth", capabilities: ["defi-research", "scan-yields", "token-info", "protocol-stats"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3" } },
-    { ensName: "analyst.agentmesh.eth", capabilities: ["risk-analysis", "risk-assess", "contract-audit"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xcd21f6d0d04e2c4367efa5391b5e0a7d950aade4e47f0661765b94ec6298dbac" } },
-    { ensName: "executor.agentmesh.eth", capabilities: ["execution", "execute-swap", "execute-deposit", "check-balance"], pricePerCall: "0.02", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd" } },
-    { ensName: "gas-optimizer.agentmesh.eth", capabilities: ["gas-prediction", "fee-estimation"], pricePerCall: "0.005", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea6d5e57dea6dc055e3a74192fa8e6210fd9eb65226140e60939cf18e972b13e" } },
+    { ensName: "orchestrator.agent-mesh.eth", capabilities: ["task-planning", "tool-discovery", "orchestration"], pricePerCall: "0", isActive: true },
+    { ensName: "researcher.agent-mesh.eth", capabilities: ["defi-research", "scan-yields", "token-info", "protocol-stats"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea2ca6c50dbdaf1a6e1620fe99224e0762e9d06e0a606f622d3794bf95ba84f3" } },
+    { ensName: "analyst.agent-mesh.eth", capabilities: ["risk-analysis", "risk-assess", "contract-audit"], pricePerCall: "0.01", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xcd21f6d0d04e2c4367efa5391b5e0a7d950aade4e47f0661765b94ec6298dbac" } },
+    { ensName: "executor.agent-mesh.eth", capabilities: ["execution", "execute-swap", "execute-deposit", "check-balance"], pricePerCall: "0.02", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0x06caf9370f4705b3bff3b70afb76b3941a5760e5167a9cdb19452ea4449730cd" } },
+    { ensName: "gas-optimizer.agent-mesh.eth", capabilities: ["gas-prediction", "fee-estimation"], pricePerCall: "0.005", isActive: true, reputation: { tasksCompleted: 1, successRate: 100, txHash: "0xea6d5e57dea6dc055e3a74192fa8e6210fd9eb65226140e60939cf18e972b13e" } },
 ];
 
 const ROLE_ICONS: Record<string, string> = {

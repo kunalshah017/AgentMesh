@@ -36,7 +36,7 @@ export function PaymentTicker({ events }: PaymentTickerProps) {
             <div className="flex gap-3 ml-auto">
                 {Object.entries(byAgent).map(([agent, amount]) => (
                     <span key={agent} className="text-black/60 text-xs font-bold mono">
-                        {agent.replace(".agentmesh.eth", "")}:{" "}
+                        {agent.replace(".agent-mesh.eth", "")}:{" "}
                         <span className="text-black font-black">{amount.toFixed(4)}</span>
                     </span>
                 ))}

@@ -140,12 +140,11 @@ export default function PublishPage() {
                                 />
                                 {/* ENS Availability */}
                                 {name.length >= 3 && (
-                                    <div className={`mt-2 px-3 py-2 border-2 text-xs font-bold ${
-                                        ensStatus === "checking" ? "border-gray-400 bg-gray-50 text-gray-600" :
+                                    <div className={`mt-2 px-3 py-2 border-2 text-xs font-bold ${ensStatus === "checking" ? "border-gray-400 bg-gray-50 text-gray-600" :
                                         ensStatus === "available" ? "border-green-600 bg-green-50 text-green-800" :
-                                        ensStatus === "taken" ? "border-red-600 bg-red-50 text-red-800" :
-                                        "border-gray-300 bg-gray-50 text-gray-500"
-                                    }`}>
+                                            ensStatus === "taken" ? "border-red-600 bg-red-50 text-red-800" :
+                                                "border-gray-300 bg-gray-50 text-gray-500"
+                                        }`}>
                                         {ensStatus === "checking" && `⏳ Checking ${ensName}...`}
                                         {ensStatus === "available" && `✅ ${ensName} is available!`}
                                         {ensStatus === "taken" && `❌ ${ensName} is already taken`}
