@@ -672,7 +672,7 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
                 }
               }, 60000);
             });
-          });
+          }, wsWallet);
 
           // Create or reuse chat
           let chat = message.chatId

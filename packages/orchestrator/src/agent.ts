@@ -67,6 +67,7 @@ export class OrchestratorAgent {
   private eventListeners: ((event: AgentEvent) => void)[] = [];
   private localRouter?: LocalToolRouter;
   private paymentApprovalCallback?: PaymentApprovalCallback;
+  private payerAddress?: string;
 
   constructor(config: OrchestratorConfig) {
     this.config = config;
@@ -189,8 +190,12 @@ export class OrchestratorAgent {
    * Set a callback for requesting user payment approval.
    * When set, tool calls will pause and ask the user to sign before paying.
    */
-  setPaymentApproval(cb: PaymentApprovalCallback | undefined): void {
+  setPaymentApproval(
+    cb: PaymentApprovalCallback | undefined,
+    payerAddress?: string,
+  ): void {
     this.paymentApprovalCallback = cb;
+    this.payerAddress = payerAddress;
   }
 
   private emit(event: AgentEvent): void {
@@ -534,8 +539,14 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
               ],
             },
             message: {
-              from: this.config.walletAddress ?? "0xOrchestrator",
-              to: tool.ensName,
+              from:
+                this.payerAddress ??
+                this.config.walletAddress ??
+                "0x0000000000000000000000000000000000000000",
+              to:
+                tool.endpoint && tool.endpoint.startsWith("0x")
+                  ? tool.endpoint
+                  : "0x000000000000000000000000000000000000dEaD",
               value: value.toString(),
               validAfter: validAfter.toString(),
               validBefore: validBefore.toString(),
@@ -569,7 +580,10 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
             chainId: 84532,
             token: "USDC",
             tokenAddress: "0x036CbD53842c5426634e7929541eC2318f3dCF7e",
-            from: this.config.walletAddress ?? "0xOrchestrator",
+            from:
+              this.payerAddress ??
+              this.config.walletAddress ??
+              "0x0000000000000000000000000000000000000000",
             to: tool.ensName,
             value: value.toString(),
             validAfter,
@@ -584,7 +598,9 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         } else {
           // No user callback — auto-sign server-side (legacy/API mode)
           paymentProof = await createPaymentProof(
-            this.config.walletAddress ?? "0xOrchestrator",
+            this.payerAddress ??
+              this.config.walletAddress ??
+              "0x0000000000000000000000000000000000000000",
             tool.ensName,
             price,
           );
@@ -601,7 +617,11 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         const payment: PaymentRecord = {
           txHash,
           amount: price,
-          from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
+          from:
+            proofData.from ??
+            this.payerAddress ??
+            this.config.walletAddress ??
+            "0x0000000000000000000000000000000000000000",
           to: tool.ensName,
           timestamp: Date.now(),
         };
@@ -664,7 +684,9 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         }
 
         const paymentProof = await createPaymentProof(
-          this.config.walletAddress ?? "0xOrchestrator",
+          this.payerAddress ??
+            this.config.walletAddress ??
+            "0x0000000000000000000000000000000000000000",
           payTo,
           amount,
         );
@@ -679,7 +701,11 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         const payment: PaymentRecord = {
           txHash,
           amount,
-          from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
+          from:
+            proofData.from ??
+            this.payerAddress ??
+            this.config.walletAddress ??
+            "0x0000000000000000000000000000000000000000",
           to: payTo,
           timestamp: Date.now(),
         };
@@ -761,7 +787,9 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         }
 
         const paymentProof = await createPaymentProof(
-          this.config.walletAddress ?? "0xOrchestrator",
+          this.payerAddress ??
+            this.config.walletAddress ??
+            "0x0000000000000000000000000000000000000000",
           error.paymentAddress,
           error.amount,
         );
@@ -777,7 +805,11 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         const payment: PaymentRecord = {
           txHash,
           amount: error.amount,
-          from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
+          from:
+            proofData.from ??
+            this.payerAddress ??
+            this.config.walletAddress ??
+            "0x0000000000000000000000000000000000000000",
           to: error.paymentAddress,
           timestamp: Date.now(),
         };

@@ -38,7 +38,7 @@ async function main() {
     zgServiceUrl: process.env.ZG_SERVICE_URL ?? "https://inference-api.0g.ai",
     zgApiSecret: process.env.ZG_API_SECRET ?? "",
     localMode: LOCAL_MODE,
-    walletAddress: process.env.ORCHESTRATOR_WALLET ?? "0xOrchestrator",
+    walletAddress: process.env.ORCHESTRATOR_WALLET ?? undefined,
   });
 
   // Register AgentMesh as the default built-in provider (always present)
