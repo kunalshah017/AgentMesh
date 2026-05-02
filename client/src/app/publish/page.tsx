@@ -107,14 +107,14 @@ export default function PublishPage() {
     }, [isSuccess, address, name, endpoint, capabilities, price, ensStatus2]);
 
     const handleRegister = () => {
-        if (!name || !capabilities || ensStatus === "taken") return;
-        const caps = capabilities.split(",").map((c) => c.trim());
+        if (!name || !endpoint || ensStatus === "taken") return;
+        const caps = capabilities ? capabilities.split(",").map((c) => c.trim()) : [name];
         const fullEnsName = `${name}.${PARENT_DOMAIN}`;
         writeContract({
             address: REGISTRY_ADDRESS,
             abi: REGISTRY_ABI,
             functionName: "registerAgent",
-            args: [fullEnsName, endpoint || "pending", caps, parseEther(price)],
+            args: [fullEnsName, endpoint, caps, parseEther(price)],
             chainId: 16602,
         });
     };
@@ -125,14 +125,14 @@ export default function PublishPage() {
             <Navbar />
 
             <main className="max-w-3xl mx-auto px-6 py-12">
-                <h2 className="text-3xl md:text-4xl font-black uppercase mb-2">Publish Your Tool</h2>
+                <h2 className="text-3xl md:text-4xl font-black uppercase mb-2">Publish Your MCP Server</h2>
                 <p className="text-sm font-medium mb-8 opacity-70">
-                    Register an MCP tool on-chain. Once registered, AI agents can discover and pay for your tool automatically.
+                    Register your MCP server on-chain. The orchestrator will auto-discover all your tools via <code>tools/list</code> and pay you per call via x402.
                 </p>
 
                 {/* Steps */}
                 <div className="flex gap-3 mb-10">
-                    {["1. Build", "2. Register", "3. Earn"].map((s, i) => (
+                    {["1. Deploy MCP", "2. Register", "3. Earn Per Call"].map((s, i) => (
                         <div key={i} className={`border-3 border-black px-3 py-1.5 text-xs font-black uppercase shadow-[2px_2px_0px_0px_#000] ${i === 1 ? "bg-neo-accent" : "bg-neo-bg"}`}>
                             {s}
                         </div>
@@ -167,14 +167,14 @@ export default function PublishPage() {
                         </div>
 
                         <div className="space-y-5">
-                            {/* Tool Name + ENS Check */}
+                            {/* Provider Name + ENS Check */}
                             <div>
-                                <label className="text-xs font-black uppercase block mb-1">Tool Name *</label>
+                                <label className="text-xs font-black uppercase block mb-1">Provider Name *</label>
                                 <input
                                     type="text"
                                     value={name}
                                     onChange={(e) => setName(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ""))}
-                                    placeholder="e.g. gas-optimizer"
+                                    placeholder="e.g. gas-tools, defi-analytics"
                                     className="w-full border-4 border-black p-3 text-sm font-bold bg-neo-bg focus:outline-none focus:border-neo-accent"
                                 />
                                 {/* ENS Availability */}
@@ -191,21 +191,36 @@ export default function PublishPage() {
                                 )}
                             </div>
 
-                            {/* Capabilities */}
+                            {/* MCP Endpoint (primary field) */}
                             <div>
-                                <label className="text-xs font-black uppercase block mb-1">Capabilities * <span className="opacity-50">(comma separated)</span></label>
+                                <label className="text-xs font-black uppercase block mb-1">MCP Endpoint URL *</label>
+                                <input
+                                    type="text"
+                                    value={endpoint}
+                                    onChange={(e) => setEndpoint(e.target.value)}
+                                    placeholder="https://your-server.com/mcp"
+                                    className="w-full border-4 border-black p-3 text-sm font-bold bg-neo-bg focus:outline-none focus:border-neo-accent"
+                                />
+                                <p className="text-[10px] mt-1 opacity-50">
+                                    Your MCP server URL. The orchestrator calls <code>tools/list</code> to discover all available tools automatically.
+                                </p>
+                            </div>
+
+                            {/* Categories (informational) */}
+                            <div>
+                                <label className="text-xs font-black uppercase block mb-1">Categories <span className="opacity-50">(comma separated, for discovery)</span></label>
                                 <input
                                     type="text"
                                     value={capabilities}
                                     onChange={(e) => setCapabilities(e.target.value)}
-                                    placeholder="e.g. gas-prediction, fee-estimation"
+                                    placeholder="e.g. gas-prediction, defi-research, execution"
                                     className="w-full border-4 border-black p-3 text-sm font-bold bg-neo-bg focus:outline-none focus:border-neo-accent"
                                 />
                             </div>
 
-                            {/* Price */}
+                            {/* Base Price (advertised) */}
                             <div>
-                                <label className="text-xs font-black uppercase block mb-1">Price Per Call (USDC)</label>
+                                <label className="text-xs font-black uppercase block mb-1">Base Price (USDC) <span className="opacity-50">— advertised starting price</span></label>
                                 <input
                                     type="text"
                                     value={price}
@@ -213,24 +228,15 @@ export default function PublishPage() {
                                     placeholder="0.01"
                                     className="w-full border-4 border-black p-3 text-sm font-bold bg-neo-bg focus:outline-none focus:border-neo-accent"
                                 />
-                            </div>
-
-                            {/* Endpoint */}
-                            <div>
-                                <label className="text-xs font-black uppercase block mb-1">AXL Peer Key / MCP Endpoint</label>
-                                <input
-                                    type="text"
-                                    value={endpoint}
-                                    onChange={(e) => setEndpoint(e.target.value)}
-                                    placeholder="e.g. axl_peer_key_hex or https://your-server.com/mcp"
-                                    className="w-full border-4 border-black p-3 text-sm font-bold bg-neo-bg focus:outline-none focus:border-neo-accent"
-                                />
+                                <p className="text-[10px] mt-1 opacity-50">
+                                    Display price for the marketplace. Actual pricing is controlled by your server via x402 (HTTP 402 responses).
+                                </p>
                             </div>
 
                             {/* Submit */}
                             <button
                                 onClick={handleRegister}
-                                disabled={isPending || isConfirming || !name || !capabilities || ensStatus === "taken" || ensStatus === "checking"}
+                                disabled={isPending || isConfirming || !name || !endpoint || ensStatus === "taken" || ensStatus === "checking"}
                                 className={`w-full border-4 border-black p-4 text-lg font-black uppercase shadow-[5px_5px_0px_0px_#000] hover:shadow-[3px_3px_0px_0px_#000] hover:translate-x-[2px] hover:translate-y-[2px] transition-all ${isPending || isConfirming || ensStatus === "taken" || ensStatus === "checking"
                                     ? "bg-gray-300 cursor-wait"
                                     : "bg-neo-accent cursor-pointer"
@@ -248,7 +254,7 @@ export default function PublishPage() {
                             {/* Success */}
                             {isSuccess && txHash && (
                                 <div className="border-4 border-green-600 bg-green-100 p-4 mt-4">
-                                    <p className="font-black text-sm uppercase text-green-800">✅ Tool Registered On-Chain!</p>
+                                    <p className="font-black text-sm uppercase text-green-800">✅ MCP Server Registered!</p>
                                     <p className="text-xs text-green-700 mt-1">
                                         ENS: <span className="font-mono font-bold">{name}.{PARENT_DOMAIN}</span>
                                         {ensStatus2 === "registering" && " — Creating subname..."}

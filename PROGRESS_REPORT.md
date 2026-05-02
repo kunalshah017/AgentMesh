@@ -207,6 +207,19 @@
 - ✅ MCP JSON-RPC format over HTTP with x402 payment header attached
 - ✅ Falls back to LOCAL_MODE (bundled functions) or AXL P2P if no endpoint
 
+### 4.7 Provider-Level Registration + Runtime Tool Discovery
+
+- ✅ Architecture: Publishers register MCP server once, orchestrator discovers tools at runtime
+- ✅ `DiscoveredTool` type: name, description, inputSchema, providerName, providerEndpoint
+- ✅ `ToolCatalog` class: calls `tools/list` on each registered provider's endpoint
+- ✅ `refreshRegistry()` now populates ToolCatalog from all external providers
+- ✅ `callTool()` resolves tool→provider via catalog, uses x402 flow (attempt → 402 → pay → retry)
+- ✅ LLM planner sees individual tool names + descriptions (not vague capabilities)
+- ✅ `/catalog` API endpoint returns all discovered tools for frontend display
+- ✅ Publish page updated: "Publish Your MCP Server" — endpoint URL is primary field
+- ✅ Base price is advertised/display only — actual pricing controlled by publisher's x402 responses
+- ✅ No contract redeployment needed — existing fields reused (axlPeerKey → endpoint URL)
+
 ### 4.4 Documentation
 
 - ✅ README with architecture diagram + setup guide (comprehensive, submission-ready)

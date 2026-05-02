@@ -8,6 +8,7 @@ import {
   type AgentIdentity,
   type AgentEvent,
   type PaymentRecord,
+  type DiscoveredTool,
   callMCPService,
   PaymentRequiredError,
   discoverToolsByCapability,
@@ -21,6 +22,7 @@ import {
 } from "@agentmesh/shared";
 import { payWithAnyToken } from "@agentmesh/executor/tools";
 import { LocalToolRouter } from "./local-router.js";
+import { ToolCatalog } from "./tool-catalog.js";
 
 export interface OrchestratorConfig {
   axlPort: number;
@@ -34,6 +36,7 @@ export class OrchestratorAgent {
   private llm: OpenAI;
   private config: OrchestratorConfig;
   private toolRegistry: AgentIdentity[] = [];
+  private toolCatalog: ToolCatalog = new ToolCatalog();
   private eventListeners: ((event: AgentEvent) => void)[] = [];
   private localRouter?: LocalToolRouter;
 
@@ -68,7 +71,15 @@ export class OrchestratorAgent {
   }
 
   /**
+   * Return discovered tools from external MCP providers (for API).
+   */
+  getCatalog(): DiscoveredTool[] {
+    return this.toolCatalog.getAllTools();
+  }
+
+  /**
    * Refresh tool registry from on-chain AgentRegistry + ENS text records.
+   * Then discover individual tools from external providers via tools/list.
    * Priority: 1) On-chain registry (0G Chain), 2) ENS resolution (Sepolia), 3) Local fallback.
    */
   async refreshRegistry(): Promise<void> {
@@ -100,6 +111,38 @@ export class OrchestratorAgent {
       }
     } catch {
       // Non-critical — ENS resolution is optional enrichment
+    }
+
+    // 3. Discover individual tools from external providers via tools/list
+    await this.toolCatalog.discoverFromProviders(this.toolRegistry);
+
+    // Register local tools in catalog so planner sees them
+    if (this.config.localMode && this.localRouter) {
+      this.toolCatalog.registerLocalTools([
+        {
+          name: "scan-yields",
+          description: "Scan DeFi protocols for yield opportunities",
+        },
+        { name: "token-info", description: "Get token price and market data" },
+        {
+          name: "protocol-stats",
+          description: "Get protocol TVL and statistics",
+        },
+        { name: "risk-assess", description: "Assess risk of a DeFi protocol" },
+        {
+          name: "contract-audit",
+          description: "Check smart contract audit status",
+        },
+        {
+          name: "execute-swap",
+          description: "Execute a token swap via Uniswap",
+        },
+        {
+          name: "execute-deposit",
+          description: "Deposit tokens into a DeFi protocol",
+        },
+        { name: "check-balance", description: "Check wallet token balances" },
+      ]);
     }
   }
 
@@ -146,20 +189,39 @@ export class OrchestratorAgent {
         subtask.status = "in-progress";
 
         // Discover tool for this subtask
-        const tools = await discoverToolsByCapability(
-          subtask.assignedTool,
-          this.toolRegistry,
-        );
+        // 1. Check ToolCatalog first (external providers discovered via tools/list)
+        const catalogTool = this.toolCatalog.getTool(subtask.assignedTool);
+        let tool: AgentIdentity;
 
-        if (tools.length === 0) {
-          subtask.status = "failed";
-          subtask.result = {
-            error: `No tool found for: ${subtask.assignedTool}`,
+        if (catalogTool && catalogTool.providerEndpoint) {
+          // Found in catalog — resolve to provider
+          const provider = this.toolRegistry.find(
+            (t) => t.ensName === catalogTool.providerName,
+          );
+          tool = provider ?? {
+            name: catalogTool.providerName,
+            ensName: catalogTool.providerName,
+            axlPeerKey: "",
+            endpoint: catalogTool.providerEndpoint,
+            capabilities: [catalogTool.name],
+            pricePerCall: "0.01",
           };
-          continue;
-        }
+        } else {
+          // 2. Fallback: match by capability in registry
+          const tools = await discoverToolsByCapability(
+            subtask.assignedTool,
+            this.toolRegistry,
+          );
 
-        const tool = tools[0];
+          if (tools.length === 0) {
+            subtask.status = "failed";
+            subtask.result = {
+              error: `No tool found for: ${subtask.assignedTool}`,
+            };
+            continue;
+          }
+          tool = tools[0];
+        }
         this.emit({
           type: "tool_called",
           tool: tool.ensName,
@@ -341,9 +403,13 @@ export class OrchestratorAgent {
   }
 
   private async planTaskWithLLM(goal: string): Promise<SubTask[]> {
+    const toolSummary = this.toolCatalog.getToolSummaryForPlanner();
     const systemPrompt = `You are a task planner for a DeFi agent mesh. Break the user's goal into subtasks.
-Available tool capabilities: defi-research, risk-analysis, execution.
-Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "capability": "..."}]`;
+Available tools:
+${toolSummary}
+
+Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]
+Use exact tool names from the list above. If unsure, use the closest match.`;
 
     const response = await this.llm.chat.completions.create({
       model: ZERO_G.computeModel,
@@ -362,13 +428,14 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
       const jsonStr = jsonMatch ? jsonMatch[0] : content;
       const parsed = JSON.parse(jsonStr) as Array<{
         description: string;
-        capability: string;
+        capability?: string;
+        tool?: string;
       }>;
       return parsed.map((item) => ({
         id: uuid(),
         parentId: "",
         description: item.description,
-        assignedTool: item.capability,
+        assignedTool: item.tool ?? item.capability ?? "defi-research",
         status: "pending" as const,
       }));
     } catch {
@@ -394,56 +461,111 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
     subtask: SubTask,
   ): Promise<unknown> {
     // External HTTP endpoint: call tool via its registered URL
+    // Uses x402 flow: attempt call → if 402 → pay → retry
     if (tool.endpoint && tool.endpoint.startsWith("http")) {
-      const price = tool.pricePerCall ?? "0.01";
-      const paymentProof = await createPaymentProof(
-        this.config.walletAddress ?? "0xOrchestrator",
-        tool.ensName,
-        price,
-      );
+      // Resolve the specific tool name from the catalog
+      const catalogTool = this.toolCatalog.getTool(subtask.assignedTool);
+      const endpoint = catalogTool?.providerEndpoint ?? tool.endpoint;
+      const toolName = catalogTool?.name ?? subtask.assignedTool;
 
-      const proofData = JSON.parse(
-        Buffer.from(paymentProof, "base64").toString(),
-      );
-      const txHash = proofData.signature
-        ? proofData.signature.slice(0, 66)
-        : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
-
-      const payment: PaymentRecord = {
-        txHash,
-        amount: price,
-        from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
-        to: tool.ensName,
-        timestamp: Date.now(),
-      };
-      this.emit({ type: "payment_sent", payment });
-      subtask.payment = payment;
-
-      // Call the external MCP/HTTP endpoint
-      const response = await fetch(tool.endpoint, {
+      // First attempt: call without payment (server may return 402)
+      const firstResponse = await fetch(endpoint, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Payment": paymentProof,
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           jsonrpc: "2.0",
           method: "tools/call",
           id: 1,
           params: {
-            name: subtask.assignedTool,
+            name: toolName,
             arguments: { task: subtask.description },
           },
         }),
       });
 
-      if (!response.ok) {
+      // x402 flow: server demands payment
+      if (firstResponse.status === 402) {
+        const paymentRequired = (await firstResponse.json()) as {
+          amount?: string;
+          token?: string;
+          address?: string;
+        };
+        const amount = paymentRequired.amount ?? tool.pricePerCall ?? "0.01";
+        const payTo = paymentRequired.address ?? tool.ensName;
+
+        console.log(`💰 Payment required: ${amount} USDC to ${payTo}`);
+
+        // Pay-with-any-token: auto-swap if needed
+        const swapResult = await payWithAnyToken("ETH", amount);
+        if (swapResult.swapExecuted) {
+          this.emit({
+            type: "tool_called",
+            tool: "pay-with-any-token",
+            method: `💱 ${swapResult.amountIn} ${swapResult.sourceToken} → ${swapResult.amountOut} USDC via ${swapResult.swapRoute}`,
+          });
+        }
+
+        const paymentProof = await createPaymentProof(
+          this.config.walletAddress ?? "0xOrchestrator",
+          payTo,
+          amount,
+        );
+
+        const proofData = JSON.parse(
+          Buffer.from(paymentProof, "base64").toString(),
+        );
+        const txHash = proofData.signature
+          ? proofData.signature.slice(0, 66)
+          : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
+
+        const payment: PaymentRecord = {
+          txHash,
+          amount,
+          from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
+          to: payTo,
+          timestamp: Date.now(),
+        };
+        this.emit({ type: "payment_sent", payment });
+        subtask.payment = payment;
+
+        // Retry with payment header
+        const retryResponse = await fetch(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Payment": paymentProof,
+          },
+          body: JSON.stringify({
+            jsonrpc: "2.0",
+            method: "tools/call",
+            id: 1,
+            params: {
+              name: toolName,
+              arguments: { task: subtask.description },
+            },
+          }),
+        });
+
+        if (!retryResponse.ok) {
+          throw new Error(`Payment retry failed: ${retryResponse.status}`);
+        }
+
+        const retryData = (await retryResponse.json()) as {
+          result?: unknown;
+          error?: { message: string };
+        };
+        if (retryData.error) throw new Error(retryData.error.message);
+        return retryData.result;
+      }
+
+      // No 402 — tool responded directly
+      if (!firstResponse.ok) {
         throw new Error(
-          `External tool returned ${response.status}: ${response.statusText}`,
+          `External tool returned ${firstResponse.status}: ${firstResponse.statusText}`,
         );
       }
 
-      const data = (await response.json()) as {
+      const data = (await firstResponse.json()) as {
         result?: unknown;
         error?: { message: string };
       };

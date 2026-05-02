@@ -28,6 +28,11 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
     res.json(agent.getRegistry());
   });
 
+  // Discovered tools catalog (individual tools from all providers via tools/list)
+  app.get("/catalog", (_req, res) => {
+    res.json(agent.getCatalog());
+  });
+
   // Submit a goal
   app.post("/goal", async (req, res) => {
     const { goal } = req.body as { goal?: string };
@@ -61,12 +66,10 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
 
     // Validate label: lowercase alphanumeric + hyphens only
     if (!/^[a-z0-9-]{3,}$/.test(label)) {
-      res
-        .status(400)
-        .json({
-          error:
-            "Invalid label: must be lowercase alphanumeric with hyphens, min 3 chars",
-        });
+      res.status(400).json({
+        error:
+          "Invalid label: must be lowercase alphanumeric with hyphens, min 3 chars",
+      });
       return;
     }
 

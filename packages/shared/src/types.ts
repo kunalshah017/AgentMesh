@@ -10,6 +10,15 @@ export interface AgentIdentity {
   pricePerCall: string; // USDC amount as string
 }
 
+// --- Discovered Tool (from tools/list on external MCP servers) ---
+export interface DiscoveredTool {
+  name: string; // Tool name as returned by tools/list
+  description: string; // Human-readable description
+  inputSchema?: Record<string, unknown>; // JSON Schema for arguments
+  providerName: string; // Provider ENS name (e.g. "gas-tools.agent-mesh.eth")
+  providerEndpoint: string; // Provider's MCP endpoint URL
+}
+
 // --- MCP Types ---
 export interface MCPRequest {
   jsonrpc: "2.0";
