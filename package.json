@@ -24,6 +24,7 @@
     "contracts:deploy": "bun run --filter @agentmesh/contracts deploy"
   },
   "devDependencies": {
+    "ethers": "^6.16.0",
     "turbo": "^2.5.0",
     "typescript": "^5.8.0"
   },

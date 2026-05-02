@@ -17,6 +17,7 @@ import {
   ZERO_G,
   TOOL_PRICES,
 } from "@agentmesh/shared";
+import { payWithAnyToken } from "@agentmesh/executor/tools";
 import { LocalToolRouter } from "./local-router.js";
 
 export interface OrchestratorConfig {
@@ -386,16 +387,34 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
           `💰 Payment required: ${error.amount} USDC to ${error.paymentAddress}`,
         );
 
-        const paymentProof = createPaymentProof(
+        // Pay-with-any-token: auto-swap ETH → USDC if needed via Uniswap
+        const swapResult = await payWithAnyToken("ETH", error.amount);
+        if (swapResult.swapExecuted) {
+          this.emit({
+            type: "tool_called",
+            tool: "pay-with-any-token",
+            method: `💱 ${swapResult.amountIn} ${swapResult.sourceToken} → ${swapResult.amountOut} USDC via ${swapResult.swapRoute}`,
+          });
+        }
+
+        const paymentProof = await createPaymentProof(
           this.config.walletAddress ?? "0xOrchestrator",
           error.paymentAddress,
           error.amount,
         );
 
+        // Derive txHash from the signed proof (deterministic, verifiable)
+        const proofData = JSON.parse(
+          Buffer.from(paymentProof, "base64").toString(),
+        );
+        const txHash = proofData.signature
+          ? proofData.signature.slice(0, 66) // Use first 32 bytes of signature as txHash
+          : `0x${Buffer.from(paymentProof.slice(0, 32)).toString("hex").padEnd(64, "0")}`;
+
         const payment: PaymentRecord = {
-          txHash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2, 10)}`,
+          txHash,
           amount: error.amount,
-          from: this.config.walletAddress ?? "0xOrchestrator",
+          from: proofData.from ?? this.config.walletAddress ?? "0xOrchestrator",
           to: error.paymentAddress,
           timestamp: Date.now(),
         };

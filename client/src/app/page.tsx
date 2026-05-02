@@ -26,25 +26,25 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-neo-bg">
+    <div className="h-screen flex flex-col bg-neo-bg overflow-hidden">
       <Header status={status} eventCount={events.length} />
       <PaymentTicker events={events} />
 
-      <main className="flex-1 grid grid-cols-12 gap-0 border-t-4 border-black">
+      <main className="flex-1 grid grid-cols-1 md:grid-cols-12 gap-0 border-t-4 border-black min-h-0">
         {/* Chat Panel — Left */}
-        <section className="col-span-5 border-r-4 border-black flex flex-col h-[calc(100vh-80px)]">
+        <section className="md:col-span-5 border-r-0 md:border-r-4 border-black flex flex-col min-h-0">
           <ChatPanel events={events} onSendGoal={sendGoal} status={status} />
         </section>
 
         {/* Right Side — Network + Activity Feed */}
-        <section className="col-span-7 flex flex-col h-[calc(100vh-80px)]">
+        <section className="md:col-span-7 flex flex-col min-h-0">
           {/* Network Graph — Top Right */}
-          <div className="flex-1 border-b-4 border-black">
+          <div className="flex-1 border-b-4 border-black min-h-0 overflow-hidden">
             <NetworkGraph activeNodes={activeNodes} />
           </div>
 
           {/* Activity Feed — Bottom Right */}
-          <div className="h-[320px] overflow-y-auto">
+          <div className="h-[280px] shrink-0 overflow-y-auto">
             <ActivityFeed events={events} />
           </div>
         </section>

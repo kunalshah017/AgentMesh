@@ -1,5 +1,6 @@
 // Reputation tracking via KeeperHub MCP on 0G Chain
 
+import { ethers } from "ethers";
 import { KEEPERHUB, ZERO_G } from "./constants.js";
 
 const REPUTATION_TRACKER_ADDRESS = "0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4";
@@ -128,7 +129,8 @@ export async function recordReputation(
 }
 
 /**
- * Direct reputation update via 0G Chain RPC (fallback if KeeperHub doesn't support chainId 16602).
+ * Direct reputation update via signed transaction to 0G Chain.
+ * Signs with PRIVATE_KEY and submits via eth_sendRawTransaction.
  */
 async function recordReputationDirect(
   agentIdBytes32: string,
@@ -142,40 +144,34 @@ async function recordReputationDirect(
   }
 
   try {
-    // Encode the function call manually
-    // recordTask(bytes32,bool,uint256,uint256)
-    const selector = "0x76c9840b"; // keccak256("recordTask(bytes32,bool,uint256,uint256)") first 4 bytes
-    const data =
-      selector +
-      agentIdBytes32.slice(2).padStart(64, "0") +
-      (success ? "1" : "0").padStart(64, "0") +
-      responseTimeMs.toString(16).padStart(64, "0") +
-      earnedUsdc.toString(16).padStart(64, "0");
+    const provider = new ethers.JsonRpcProvider(ZERO_G.chainRpc);
+    const wallet = new ethers.Wallet(privateKey, provider);
 
-    // Send via eth_sendTransaction to 0G Chain
-    const response = await fetch(ZERO_G.chainRpc, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        method: "eth_call",
-        id: 1,
-        params: [
-          {
-            to: REPUTATION_TRACKER_ADDRESS,
-            data,
-          },
-          "latest",
-        ],
-      }),
+    // Encode the function call: recordTask(bytes32,bool,uint256,uint256)
+    const iface = new ethers.Interface([
+      "function recordTask(bytes32 agentId, bool success, uint256 responseTimeMs, uint256 earnedUsdc)",
+    ]);
+    const data = iface.encodeFunctionData("recordTask", [
+      agentIdBytes32,
+      success,
+      BigInt(responseTimeMs),
+      BigInt(earnedUsdc),
+    ]);
+
+    // Send the signed transaction
+    const tx = await wallet.sendTransaction({
+      to: REPUTATION_TRACKER_ADDRESS,
+      data,
+      gasLimit: 200000n,
     });
 
-    if (response.ok) {
-      console.log(`   ⛓️ Reputation query sent to 0G Chain (read-only verify)`);
-      return { status: "verified" };
-    }
-    return { status: "failed" };
-  } catch {
+    console.log(`   ⛓️ Reputation tx sent to 0G Chain: ${tx.hash}`);
+
+    // Don't wait for confirmation (fire-and-forget for latency)
+    // but return the hash so it can be displayed
+    return { status: "submitted", txHash: tx.hash };
+  } catch (error) {
+    console.log(`   ⚠️ Direct reputation tx failed: ${error}`);
     return { status: "failed" };
   }
 }

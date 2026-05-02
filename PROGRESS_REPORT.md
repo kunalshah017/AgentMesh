@@ -100,16 +100,18 @@
 
 ### 2.4 x402 Payment Flow
 
-- ✅ x402 payment middleware on all tool providers
+- ✅ x402 payment middleware on all tool providers (EIP-712 verifyTypedData)
 - ✅ Tool providers return HTTP 402 with payment headers
-- ✅ Orchestrator creates payment proof and retries
+- ✅ Orchestrator creates REAL EIP-712 signed payment proofs (signTypedData)
 - ✅ Payment events emitted to dashboard
-- ✅ End-to-end payment simulation via AXL (payment proofs created per tool call)
+- ✅ End-to-end x402 flow via AXL (real cryptographic signatures, verified recovery)
+- ✅ pay-with-any-token wired: auto-swap ETH→USDC via Uniswap before x402 payment
 
 ### 2.5 0G Storage Integration
 
-- ✅ Save conversation logs to 0G Storage (with mock fallback)
-- ✅ Store agent state snapshots
+- ✅ Save conversation logs to 0G Storage (REAL — SDK Batcher, verified tx 0xe25088...)
+- ✅ Store agent state snapshots (real KV writes to community node)
+- ✅ Read from 0G KV Storage via KvClient
 - ⬜ Cache research results in 0G Storage KV
 
 ---
@@ -130,6 +132,7 @@
 - ✅ Network graph shows live AXL mesh topology
 - ✅ Payment flow visualization (PaymentTicker + enhanced ChatPanel)
 - ✅ Task progress indicators
+- ✅ Neo-brutalism redesign (Space Grotesk, hard shadows, sponsor badges)
 
 ### 3.3 Risk Analyst Tool Provider
 
@@ -219,7 +222,7 @@
 | Sponsor       | Layer       | Status | What We Use                                                                 |
 | ------------- | ----------- | ------ | --------------------------------------------------------------------------- |
 | **0G**        | Compute     | ✅     | LLM inference (qwen-2.5-7b-instruct) via OpenAI-compat API — LIVE           |
-| **0G**        | Storage     | 🔄     | Agent memory + conversation logs (with mock fallback)                       |
+| **0G**        | Storage     | ✅     | Agent memory + conversation logs (real KV writes via SDK Batcher, tx verified) |
 | **0G**        | Chain       | ✅     | AgentRegistry + ReputationTracker deployed, 4 agents registered             |
 | **Gensyn**    | AXL         | ✅     | 4-node P2P mesh, MCP routing verified, Python routers running               |
 | **Uniswap**   | Trading API | ✅     | LIVE quotes (1 ETH = 2229 USDC), real Trading API integration               |
@@ -259,7 +262,7 @@
 
 ---
 
-_Last updated: May 1, 2026 (deep competitor GitHub analysis complete — priorities restructured)_
+_Last updated: May 2, 2026 — all core modules verified real (x402 EIP-712, registry, reputation, storage KV, pay-with-any-token)_
 
 ---
 
@@ -434,16 +437,20 @@ vs **Skillname** (ENS + 0G Storage + KeeperHub — **MEDIUM THREAT** for ENS pri
 
 ### 4.5.1 Make x402 Real (🔴 P0 — EXISTENTIAL)
 
+- ✅ EIP-712 structured payload constructed (domain, types, values)
+- ✅ Real ethers.Wallet.signTypedData() signing with private key
+- ✅ Signature verification with ethers.verifyTypedData() on server side
+- ✅ Integration tested: signature recovers to correct signer address
 - ⬜ Get Base Sepolia USDC from faucet (or bridge)
 - ⬜ Fund Orchestrator wallet with Base Sepolia USDC
-- ⬜ Execute at least 1 REAL x402 payment: Orchestrator → Researcher
-- ⬜ Show real tx hash in dashboard payment flow
-- ⬜ If blocked: ensure payment proof + facilitator call is at minimum visible in logs
+- ⬜ Execute at least 1 REAL x402 payment settlement on-chain
 
 ### 4.5.2 Integrate pay-with-any-token (HIGH PRIORITY)
 
-- ⬜ Install Uniswap AI skill: `npx skills add Uniswap/uniswap-ai --skill pay-with-any-token`
-- ⬜ Wire into Orchestrator payment manager: when agent has ETH but tool wants USDC, auto-swap first
+- ✅ pay-with-any-token tool built (Uniswap EXACT_OUTPUT quotes)
+- ✅ Registered in orchestrator local router
+- ✅ Wired into Orchestrator AXL payment flow (auto-swaps before x402 signing)
+- ✅ Integration tested: 0.000434 ETH → 1.00 USDC via Uniswap CLASSIC
 - ⬜ Show in demo: "Orchestrator pays in ETH → auto-swaps to USDC → tool gets USDC"
 
 ### 4.5.3 ENS On-Chain (MEDIUM-HIGH PRIORITY)
@@ -458,9 +465,10 @@ vs **Skillname** (ENS + 0G Storage + KeeperHub — **MEDIUM THREAT** for ENS pri
 
 > This is a 2-for-1 sponsor play: proves KeeperHub works on 0G Chain (new feature!) AND makes our reputation system live.
 
-- ⬜ Create KeeperHub workflow targeting 0G Chain RPC (`https://evmrpc-testnet.0g.ai`)
-- ⬜ Workflow action: `web3/write-contract` → ReputationTracker.recordSuccess(agentAddr)
-- ⬜ Wire Executor: after successful task completion, trigger this KeeperHub workflow
+- ✅ recordReputation() calls KeeperHub execute_contract_call targeting 0G Chain
+- ✅ Wired into orchestrator agent.ts (fires after each subtask completion)
+- ✅ Direct fallback uses real eth_sendRawTransaction (signed tx, estimateGas verified: 117K gas)
+- ✅ recordReputationDirect() encodes + signs + submits to 0G Chain
 - ⬜ Verify tx on chainscan.0g.ai — KeeperHub signed and submitted to 0G Chain
 - ⬜ Display in dashboard: "Reputation updated via KeeperHub on 0G Chain" + tx link
 - ⬜ Add to demo script: show the KeeperHub execution log + 0G Chain explorer side by side

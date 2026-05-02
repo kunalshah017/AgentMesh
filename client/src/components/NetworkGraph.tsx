@@ -19,9 +19,9 @@ interface NetworkGraphProps {
 
 export function NetworkGraph({ activeNodes }: NetworkGraphProps) {
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {/* Header bar */}
-      <div className="px-4 py-3 border-b-4 border-black bg-neo-white flex items-center justify-between">
+      <div className="px-4 py-3 border-b-4 border-black bg-neo-white flex items-center justify-between shrink-0">
         <h2 className="text-sm font-black uppercase tracking-wider">
           P2P MESH NETWORK
           <span className="ml-2 bg-black text-neo-white px-2 py-0.5 text-[10px] font-black">AXL</span>
@@ -37,10 +37,10 @@ export function NetworkGraph({ activeNodes }: NetworkGraphProps) {
       </div>
 
       {/* Graph area */}
-      <div className="flex-1 relative bg-neo-bg pattern-grid">
+      <div className="flex-1 relative bg-neo-bg pattern-grid min-h-0 overflow-hidden">
         <svg
           viewBox="0 0 100 100"
-          className="w-full h-full"
+          className="absolute inset-0 w-full h-full"
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Connection lines — thick and brutalist */}
