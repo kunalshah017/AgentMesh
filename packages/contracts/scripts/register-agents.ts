@@ -1,77 +1,61 @@
-// Register agents on-chain to AgentRegistry (0G Chain Testnet)
-// Usage: bun run scripts/register-agents.ts
+// Register MCP providers on-chain to AgentRegistry v2 (0G Chain Testnet)
+// Usage: npx hardhat run scripts/register-agents.ts --network zgTestnet
 
 import { ethers } from "hardhat";
 
+// Will be updated after deployment
 const AGENT_REGISTRY = "0x0B05236c972DbFCe91519a183980F0D5fFd9da28";
 
-const AGENTS = [
+const PROVIDERS = [
   {
-    ensName: "researcher.agentmesh.eth",
-    axlPeerKey:
-      "85bae0a7eff775247fba487d780dadc9c988ca191bc3d1304b3c5e64471766b6",
-    capabilities: [
-      "defi-research",
-      "scan-yields",
-      "token-info",
-      "protocol-stats",
-    ],
-    pricePerCall: 10000, // 0.01 USDC (6 decimals)
+    ensName: "researcher.agent-mesh.eth",
+    endpoint: "", // Set when provider has a live MCP server
+    categories: ["defi-research", "yield-scanning", "token-analysis"],
   },
   {
-    ensName: "analyst.agentmesh.eth",
-    axlPeerKey:
-      "f2d4eea2662c03e11ce94ae55a709fef9e24c69a80d076ba778dbad83c815372",
-    capabilities: [
-      "risk-analysis",
-      "risk-assess",
-      "contract-audit",
-      "portfolio-risk",
-    ],
-    pricePerCall: 30000, // 0.03 USDC
+    ensName: "analyst.agent-mesh.eth",
+    endpoint: "",
+    categories: ["risk-analysis", "contract-auditing", "portfolio-risk"],
   },
   {
-    ensName: "executor.agentmesh.eth",
-    axlPeerKey:
-      "60bb86f0c1180c125757f4b017fd1308e12c00f8373e695411630c3c244a271d",
-    capabilities: [
-      "execution",
-      "execute-swap",
-      "execute-deposit",
-      "check-balance",
-    ],
-    pricePerCall: 50000, // 0.05 USDC
+    ensName: "executor.agent-mesh.eth",
+    endpoint: "",
+    categories: ["execution", "token-swaps", "defi-deposits"],
+  },
+  {
+    ensName: "gas-optimizer.agent-mesh.eth",
+    endpoint: "",
+    categories: ["gas-prediction", "fee-estimation"],
   },
 ];
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log("Registering agents from:", deployer.address);
+  console.log("Registering providers from:", deployer.address);
 
   const registry = await ethers.getContractAt("AgentRegistry", AGENT_REGISTRY);
 
-  for (const agent of AGENTS) {
+  for (const provider of PROVIDERS) {
     try {
       const tx = await registry.registerAgent(
-        agent.ensName,
-        agent.axlPeerKey,
-        agent.capabilities,
-        agent.pricePerCall,
+        provider.ensName,
+        provider.endpoint,
+        provider.categories,
       );
       const receipt = await tx.wait();
-      console.log(`✅ Registered ${agent.ensName} — tx: ${receipt!.hash}`);
+      console.log(`✅ Registered ${provider.ensName} — tx: ${receipt!.hash}`);
     } catch (error: any) {
       if (error.message?.includes("already registered")) {
-        console.log(`⏭️  ${agent.ensName} already registered`);
+        console.log(`⏭️  ${provider.ensName} already registered`);
       } else {
-        console.error(`❌ Failed to register ${agent.ensName}:`, error.message);
+        console.error(`❌ Failed to register ${provider.ensName}:`, error.message);
       }
     }
   }
 
   // Verify
   const count = await registry.getAgentCount();
-  console.log(`\n📋 Total agents registered: ${count}`);
+  console.log(`\n📋 Total providers registered: ${count}`);
 }
 
 main().catch(console.error);
