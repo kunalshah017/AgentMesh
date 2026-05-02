@@ -464,9 +464,10 @@ vs **Skillname** (ENS + 0G Storage + KeeperHub — **MEDIUM THREAT** for ENS pri
 - ✅ Real ethers.Wallet.signTypedData() signing with private key
 - ✅ Signature verification with ethers.verifyTypedData() on server side
 - ✅ Integration tested: signature recovers to correct signer address
-- ⬜ Get Base Sepolia USDC from faucet (or bridge)
-- ⬜ Fund Orchestrator wallet with Base Sepolia USDC
-- ⬜ Execute at least 1 REAL x402 payment settlement on-chain
+- ✅ Funded AgentMesh wallet with 20 USDC + 0.05 ETH on Base Sepolia
+- ✅ Real x402 payment #1: 0.01 USDC → Researcher (tx 0x68eb13b, block 40986221)
+- ✅ Real x402 payment #2: 0.05 USDC → Executor (tx 0x76d2f90, block 40986230)
+- ✅ Both verified on sepolia.basescan.org
 
 ### 4.5.2 Integrate pay-with-any-token (HIGH PRIORITY)
 

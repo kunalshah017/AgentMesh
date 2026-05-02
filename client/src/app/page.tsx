@@ -93,6 +93,24 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Verified Payments Banner */}
+      <section className="border-b-4 border-black bg-neo-secondary px-6 py-4">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase">x402 LIVE</span>
+            <span className="text-sm font-black">Real USDC payments settled on Base Sepolia</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-bold">
+            <a href="https://sepolia.basescan.org/tx/0x68eb13ba381adee4ccce928461f4f4b0116f460f505b4d1c6968a4868e56927c" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              0.01 USDC → Researcher ↗
+            </a>
+            <a href="https://sepolia.basescan.org/tx/0x76d2f9047e3d96066fb975a0a15e549cdd32352171ab42d0ce089db96d256551" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              0.05 USDC → Executor ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* How It Works */}
       <section className="border-b-4 border-black px-6 py-16 bg-neo-white">
         <div className="max-w-5xl mx-auto">
