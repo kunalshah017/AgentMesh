@@ -351,6 +351,7 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
         "━━━ Task complete ━━━",
         "done",
       );
+      chatStore.flushChat(walletAddress, chat.id);
 
       res.json({ task, chatId: chat.id });
     } catch (error) {
@@ -361,6 +362,7 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
         `⚠ ${String(error)}`,
         "error",
       );
+      chatStore.flushChat(walletAddress, chat.id);
       res.status(500).json({ error: String(error) });
     }
   });
@@ -491,6 +493,9 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
     let pendingPaymentResolve:
       | ((response: { approved: boolean; signature?: string }) => void)
       | null = null;
+    let pendingTransactionResolve:
+      | ((response: { approved: boolean; txHash?: string }) => void)
+      | null = null;
 
     const unsubscribe = agent.onEvent((event) => {
       if (ws.readyState === WebSocket.OPEN) {
@@ -558,6 +563,7 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
               "━━━ Task complete ━━━",
               "done",
             );
+            chatStore.flushChat(wsWallet, wsChatId);
           }
         }
       }
@@ -574,6 +580,7 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
           signature?: string;
           signedMessage?: string;
           nonce?: string;
+          txHash?: string;
         };
 
         // Authenticate: verify wallet ownership via signed message
@@ -653,6 +660,18 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
           return;
         }
 
+        // Handle transaction approval from client (swap execution)
+        if (message.type === "transaction_approval") {
+          if (pendingTransactionResolve) {
+            pendingTransactionResolve({
+              approved: message.approved ?? false,
+              txHash: message.txHash as string | undefined,
+            });
+            pendingTransactionResolve = null;
+          }
+          return;
+        }
+
         if (message.type === "goal" && message.goal) {
           if (!wsWallet) {
             ws.send(
@@ -689,6 +708,32 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
               }, 60000);
             });
           }, wsWallet);
+
+          // Set up transaction approval callback for this session
+          agent.setTransactionApproval(async (request) => {
+            // Send transaction request to client
+            ws.send(
+              JSON.stringify({
+                type: "transaction_request",
+                toolName: request.toolName,
+                description: request.description,
+                transaction: request.transaction,
+                quote: request.quote,
+              }),
+            );
+
+            // Wait for client response
+            return new Promise((resolve) => {
+              pendingTransactionResolve = resolve;
+              // Timeout after 120 seconds (transactions take longer)
+              setTimeout(() => {
+                if (pendingTransactionResolve === resolve) {
+                  pendingTransactionResolve = null;
+                  resolve({ approved: false });
+                }
+              }, 120000);
+            });
+          });
 
           // Create or reuse chat
           let chat = message.chatId
