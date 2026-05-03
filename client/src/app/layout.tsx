@@ -6,6 +6,20 @@ export const metadata: Metadata = {
   title: "AgentMesh — Decentralized Agent Marketplace",
   description:
     "A decentralized marketplace where AI tool providers register MCP tools, orchestrated via P2P mesh with crypto-native payments.",
+  metadataBase: new URL("https://agentmesh.vercel.app"),
+  openGraph: {
+    title: "AgentMesh — Decentralized Agent Marketplace",
+    description:
+      "Deploy MCP tools, get discovered by AI agents, get paid per call via x402 micropayments. No approval process.",
+    siteName: "AgentMesh",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "AgentMesh — Decentralized Agent Marketplace",
+    description:
+      "Deploy MCP tools, get discovered by AI agents, get paid per call via x402 micropayments.",
+  },
 };
 
 export default function RootLayout({
