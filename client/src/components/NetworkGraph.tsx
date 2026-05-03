@@ -181,10 +181,11 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     (node: any, ctx: CanvasRenderingContext2D, globalScale: number) => {
       const n = node as GraphNode;
       const toolName = n.id.startsWith("tool:") ? n.id.slice(5) : "";
+      const provEns = n.id.startsWith("prov:") ? n.id.slice(5) : "";
       const isActive =
         n.nodeType === "orchestrator"
           ? activeTools.size > 0
-          : activeTools.has(toolName) || activeTools.has(n.id);
+          : activeTools.has(toolName) || activeTools.has(provEns) || activeTools.has(n.id);
 
       // Sizing
       const fontSize = n.nodeType === "orchestrator" ? 12 : n.nodeType === "provider" ? 11 : 10;
@@ -345,7 +346,8 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     let c = 0;
     for (const n of graphData.nodes) {
       const toolName = n.id.startsWith("tool:") ? n.id.slice(5) : "";
-      if (n.nodeType === "orchestrator" ? activeTools.size > 0 : activeTools.has(toolName)) c++;
+      const provEns = n.id.startsWith("prov:") ? n.id.slice(5) : "";
+      if (n.nodeType === "orchestrator" ? activeTools.size > 0 : activeTools.has(toolName) || activeTools.has(provEns)) c++;
     }
     return c;
   }, [graphData.nodes, activeTools]);

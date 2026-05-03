@@ -98,14 +98,17 @@ export default function Dashboard() {
     const toolActions = new Map<string, string>();
     const recentEvents = events.slice(-15);
     for (const e of recentEvents) {
-        const toolName = String(e.tool ?? (e.subtask as { tool?: string })?.tool ?? "");
-        if (
-            toolName &&
-            (e.type === "tool_called" || e.type === "subtask_started")
-        ) {
-            activeTools.add(toolName);
-            const method = String(e.method ?? (e.subtask as { description?: string })?.description ?? "");
-            if (method) toolActions.set(toolName, method.length > 30 ? method.slice(0, 30) + "…" : method);
+        if (e.type === "tool_called" || e.type === "subtask_started") {
+            // Add provider ENS (e.g. "agent-mesh.eth") for provider node highlighting
+            const provider = String(e.tool ?? "");
+            if (provider) activeTools.add(provider);
+            // Add specific tool name (e.g. "scan-yields") for tool node highlighting
+            const toolName = String(e.toolName ?? (e.subtask as { tool?: string })?.tool ?? "");
+            if (toolName) {
+                activeTools.add(toolName);
+                const method = String(e.method ?? (e.subtask as { description?: string })?.description ?? "");
+                if (method) toolActions.set(toolName, method.length > 30 ? method.slice(0, 30) + "…" : method);
+            }
         }
     }
     const isProcessing = events.some((e) => e.type === "task_created" && !events.some((e2) => e2.type === "task_completed"));

@@ -300,6 +300,7 @@ export class OrchestratorAgent {
         this.emit({
           type: "tool_called",
           tool: tool.ensName,
+          toolName: subtask.assignedTool,
           method: subtask.description,
         });
 

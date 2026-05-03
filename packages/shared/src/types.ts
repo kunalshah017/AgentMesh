@@ -106,7 +106,7 @@ export interface ReputationScore {
 export type AgentEvent =
   | { type: "task_created"; task: Task }
   | { type: "tool_discovered"; tool: AgentIdentity }
-  | { type: "tool_called"; tool: string; method: string }
+  | { type: "tool_called"; tool: string; method: string; toolName?: string }
   | { type: "payment_sent"; payment: PaymentRecord }
   | {
       type: "payment_request";
