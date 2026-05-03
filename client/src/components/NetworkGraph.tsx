@@ -22,11 +22,11 @@ interface PhysicsNode {
   label: string;
   icon: string;
   color: string;
-  /** provider ensName (tools) or "__orchestrator__" */
   group: string;
   pos: Vec2;
   vel: Vec2;
-  /** fixed while dragging */
+  /** Rest position — where the node wants to be */
+  rest: Vec2;
   pinned: boolean;
   w: number;
   h: number;
@@ -36,7 +36,6 @@ interface PhysicsNode {
 
 interface NetworkGraphProps {
   activeTools: Set<string>;
-  /** tool name → short action string shown on the connection line */
   toolActions: Map<string, string>;
 }
 
@@ -48,12 +47,22 @@ function shortLabel(name: string) {
     .join(" ");
 }
 
-/** Arrange N items in a circle around a centre. */
 function circleLayout(cx: number, cy: number, r: number, n: number, startAngle = -Math.PI / 2): Vec2[] {
   return Array.from({ length: n }, (_, i) => {
     const a = startAngle + (2 * Math.PI * i) / n;
     return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
   });
+}
+
+/** Measure text width with a temporary canvas for accurate node sizing */
+let measureCtx: CanvasRenderingContext2D | null = null;
+function textWidth(text: string, font: string): number {
+  if (!measureCtx) {
+    const c = document.createElement("canvas");
+    measureCtx = c.getContext("2d")!;
+  }
+  measureCtx.font = font;
+  return measureCtx.measureText(text).width;
 }
 
 /* ================================================================
@@ -67,6 +76,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
   const dragRef = useRef<{ nodeIdx: number; offset: Vec2 } | null>(null);
   const animRef = useRef<number>(0);
   const sizeRef = useRef<{ w: number; h: number }>({ w: 800, h: 600 });
+  const needsDrawRef = useRef(true);
   const [activeCount, setActiveCount] = useState(0);
 
   /* ── build nodes from catalog data ──────────────────────────── */
@@ -76,22 +86,28 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       const cx = w / 2;
       const cy = h / 2;
 
-      // Orchestrator — centre
+      const ORCH_FONT = "900 11px 'Space Grotesk', sans-serif";
+      const PROV_FONT = "900 10px 'Space Grotesk', sans-serif";
+      const TOOL_FONT = "900 9px 'Space Grotesk', sans-serif";
+
+      // Orchestrator
+      const orchLabel = "ORCHESTRATOR";
+      const orchW = Math.max(120, textWidth(orchLabel, ORCH_FONT) + 40);
       nodes.push({
         id: "__orchestrator__",
-        label: "ORCHESTRATOR",
+        label: orchLabel,
         icon: "🧠",
         color: ORCHESTRATOR_COLOR,
         group: "__orchestrator__",
         pos: { x: cx, y: cy },
         vel: { x: 0, y: 0 },
+        rest: { x: cx, y: cy },
         pinned: false,
-        w: 120,
-        h: 52,
+        w: orchW,
+        h: 48,
         isOrchestrator: true,
       });
 
-      // One ring of provider hubs around centre
       const provRadius = Math.min(w, h) * 0.28;
       const provPositions = circleLayout(cx, cy, provRadius, providers.length);
 
@@ -99,38 +115,43 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
         const pColor = PROVIDER_COLORS[pi % PROVIDER_COLORS.length];
         const pp = provPositions[pi];
         const provId = `prov:${prov.ensName}`;
+        const pLabel = prov.name.toUpperCase();
+        const pW = Math.max(110, textWidth(pLabel, PROV_FONT) + 36);
 
         nodes.push({
           id: provId,
-          label: prov.name.toUpperCase(),
+          label: pLabel,
           icon: prov.status === "online" ? "✅" : "⚪",
           color: pColor,
           group: prov.ensName,
           pos: { x: pp.x, y: pp.y },
           vel: { x: 0, y: 0 },
+          rest: { x: pp.x, y: pp.y },
           pinned: false,
-          w: 110,
-          h: 44,
+          w: pW,
+          h: 42,
           isProvider: true,
         });
 
-        // Tool nodes around this provider
         const toolRadius = Math.min(w, h) * 0.15;
         const toolPositions = circleLayout(pp.x, pp.y, toolRadius, prov.tools.length, Math.atan2(pp.y - cy, pp.x - cx));
 
         prov.tools.forEach((tool, ti) => {
           const tp = toolPositions[ti];
+          const tLabel = shortLabel(tool.name);
+          const tW = Math.max(90, textWidth(tLabel, TOOL_FONT) + 32);
           nodes.push({
             id: `tool:${tool.name}`,
-            label: shortLabel(tool.name),
+            label: tLabel,
             icon: TOOL_ICONS[tool.name] ?? "⚡",
             color: pColor,
             group: prov.ensName,
             pos: { x: tp.x, y: tp.y },
             vel: { x: 0, y: 0 },
+            rest: { x: tp.x, y: tp.y },
             pinned: false,
-            w: 100,
-            h: 38,
+            w: tW,
+            h: 36,
           });
         });
       });
@@ -145,73 +166,47 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     const { w, h } = sizeRef.current;
     if (w === 0 || h === 0) return;
     nodesRef.current = buildNodes(catalog.providers, w, h);
+    needsDrawRef.current = true;
   }, [catalog.providers, buildNodes]);
 
-  /* ── spring physics tick ────────────────────────────────────── */
-  const tick = useCallback(() => {
+  /* ── spring physics: only active after a drag release ──────── */
+  const tickPhysics = useCallback((): boolean => {
     const nodes = nodesRef.current;
-    const { w, h } = sizeRef.current;
-    if (nodes.length === 0) return;
+    if (nodes.length === 0) return false;
 
-    const SPRING_K = 0.012;
-    const DAMPING = 0.82;
-    const REPEL = 8000;
-    const PAD = 10;
+    const SPRING = 0.08;
+    const DAMPING = 0.65;
+    const SETTLE_THRESHOLD = 0.15;
+    let anyMoving = false;
 
-    // Find orchestrator
-    const orch = nodes.find((n) => n.isOrchestrator);
+    for (const node of nodes) {
+      if (node.pinned) continue;
 
-    for (let i = 0; i < nodes.length; i++) {
-      const a = nodes[i];
-      if (a.pinned) continue;
-      let fx = 0;
-      let fy = 0;
+      // Spring back toward rest position
+      const dx = node.rest.x - node.pos.x;
+      const dy = node.rest.y - node.pos.y;
 
-      // Repulsion from every other node
-      for (let j = 0; j < nodes.length; j++) {
-        if (i === j) continue;
-        const b = nodes[j];
-        let dx = a.pos.x - b.pos.x;
-        let dy = a.pos.y - b.pos.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-        const minDist = (a.w + b.w) / 2 + 10;
-        if (dist < minDist) {
-          const force = REPEL / (dist * dist);
-          fx += (dx / dist) * force;
-          fy += (dy / dist) * force;
-        }
-      }
+      node.vel.x = (node.vel.x + dx * SPRING) * DAMPING;
+      node.vel.y = (node.vel.y + dy * SPRING) * DAMPING;
 
-      // Spring toward rest position (orchestrator centre, providers around it)
-      // Tools spring toward their provider
-      if (a.isOrchestrator) {
-        fx += (w / 2 - a.pos.x) * SPRING_K * 2;
-        fy += (h / 2 - a.pos.y) * SPRING_K * 2;
-      } else if (a.isProvider && orch) {
-        // Spring to orchestrator
-        fx += (orch.pos.x - a.pos.x) * SPRING_K * 0.3;
-        fy += (orch.pos.y - a.pos.y) * SPRING_K * 0.3;
+      // Only move if velocity is non-trivial
+      if (Math.abs(node.vel.x) > SETTLE_THRESHOLD || Math.abs(node.vel.y) > SETTLE_THRESHOLD) {
+        node.pos.x += node.vel.x;
+        node.pos.y += node.vel.y;
+        anyMoving = true;
       } else {
-        // Tool — spring to its provider
-        const prov = nodes.find((n) => n.isProvider && n.group === a.group);
-        if (prov) {
-          fx += (prov.pos.x - a.pos.x) * SPRING_K * 0.5;
-          fy += (prov.pos.y - a.pos.y) * SPRING_K * 0.5;
-        }
+        // Snap to rest when settled
+        node.vel.x = 0;
+        node.vel.y = 0;
+        node.pos.x = node.rest.x;
+        node.pos.y = node.rest.y;
       }
-
-      a.vel.x = (a.vel.x + fx) * DAMPING;
-      a.vel.y = (a.vel.y + fy) * DAMPING;
-      a.pos.x += a.vel.x;
-      a.pos.y += a.vel.y;
-
-      // Keep inside bounds
-      a.pos.x = Math.max(a.w / 2 + PAD, Math.min(w - a.w / 2 - PAD, a.pos.x));
-      a.pos.y = Math.max(a.h / 2 + PAD, Math.min(h - a.h / 2 - PAD, a.pos.y));
     }
+
+    return anyMoving;
   }, []);
 
-  /* ── render loop ─────────────────────────────────────────────── */
+  /* ── render one frame ────────────────────────────────────────── */
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -225,36 +220,40 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       canvas.width = w * dpr;
       canvas.height = h * dpr;
       sizeRef.current = { w, h };
-      // Re-layout if size changed and no drag happening
       if (!dragRef.current && nodesRef.current.length > 0) {
         nodesRef.current = buildNodes(catalog.providers, w, h);
       }
+      needsDrawRef.current = true;
     }
+
+    const stillMoving = tickPhysics();
+    const hasActive = activeTools.size > 0;
+
+    // Only redraw when something changed
+    if (!needsDrawRef.current && !stillMoving && !dragRef.current && !hasActive) {
+      animRef.current = requestAnimationFrame(draw);
+      return;
+    }
+    needsDrawRef.current = stillMoving || !!dragRef.current || hasActive;
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
 
-    // Grid pattern
+    // Grid
     ctx.strokeStyle = "rgba(0,0,0,0.06)";
     ctx.lineWidth = 1;
-    for (let x = 0; x < w; x += 20) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke(); }
-    for (let y = 0; y < h; y += 20) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke(); }
-
-    tick();
+    for (let gx = 0; gx < w; gx += 20) { ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, h); ctx.stroke(); }
+    for (let gy = 0; gy < h; gy += 20) { ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(w, gy); ctx.stroke(); }
 
     const nodes = nodesRef.current;
     const orch = nodes.find((n) => n.isOrchestrator);
 
-    // ── draw connections ──
+    // ── connections ──
     for (const node of nodes) {
       if (node.isOrchestrator) continue;
-
       let target: PhysicsNode | undefined;
-      if (node.isProvider) {
-        target = orch;
-      } else {
-        target = nodes.find((n) => n.isProvider && n.group === node.group);
-      }
+      if (node.isProvider) target = orch;
+      else target = nodes.find((n) => n.isProvider && n.group === node.group);
       if (!target) continue;
 
       const toolName = node.id.startsWith("tool:") ? node.id.slice(5) : "";
@@ -269,7 +268,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Animated data packet on active connections
+      // Animated packet
       if (isActive) {
         const t = (Date.now() % 2000) / 2000;
         const px = node.pos.x + (target.pos.x - node.pos.x) * t;
@@ -283,7 +282,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
         ctx.stroke();
       }
 
-      // Action label on active tool connections
+      // Action label
       if (isActive && toolName) {
         const action = toolActions.get(toolName);
         if (action) {
@@ -299,7 +298,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       }
     }
 
-    // ── draw nodes ──
+    // ── nodes ──
     let activeC = 0;
     for (const node of nodes) {
       const toolName = node.id.startsWith("tool:") ? node.id.slice(5) : "";
@@ -315,7 +314,6 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       // Shadow
       ctx.fillStyle = "#000";
       ctx.fillRect(x + 3, y + 3, node.w, node.h);
-
       // Card
       ctx.fillStyle = isActive ? node.color : "#fff";
       ctx.fillRect(x, y, node.w, node.h);
@@ -323,28 +321,46 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       ctx.lineWidth = 2;
       ctx.strokeRect(x, y, node.w, node.h);
 
-      // Icon + label
-      ctx.font = `${node.isOrchestrator ? 18 : node.isProvider ? 14 : 13}px serif`;
-      ctx.textAlign = "center";
+      // ── icon (left side) + label (right of icon), both centred vertically ──
+      const iconFontSize = node.isOrchestrator ? 16 : node.isProvider ? 13 : 12;
+      const labelFont = node.isOrchestrator
+        ? "900 11px 'Space Grotesk', sans-serif"
+        : node.isProvider
+          ? "900 10px 'Space Grotesk', sans-serif"
+          : "900 9px 'Space Grotesk', sans-serif";
+
+      ctx.font = labelFont;
+      const labelW = ctx.measureText(node.label).width;
+      const iconW = iconFontSize + 2; // approximate emoji width
+      const gap = 4;
+      const totalW = iconW + gap + labelW;
+      const startX = node.pos.x - totalW / 2;
+      const centerY = node.isProvider ? node.pos.y - 3 : node.pos.y;
+
+      // Icon
+      ctx.font = `${iconFontSize}px serif`;
+      ctx.textAlign = "left";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#000";
-      ctx.fillText(node.icon, node.pos.x - node.w / 4 + 4, node.pos.y - 2);
+      ctx.fillText(node.icon, startX, centerY);
 
-      ctx.font = `900 ${node.isOrchestrator ? 11 : node.isProvider ? 10 : 9}px 'Space Grotesk', sans-serif`;
+      // Label
+      ctx.font = labelFont;
       ctx.fillStyle = "#000";
-      ctx.fillText(node.label, node.pos.x + 10, node.pos.y - 2);
+      ctx.fillText(node.label, startX + iconW + gap, centerY);
 
-      // Status line for providers
+      // Sub-label for providers (tool count)
       if (node.isProvider) {
         const provData = catalog.providers.find((p) => `prov:${p.ensName}` === node.id);
         if (provData) {
           ctx.font = "bold 8px 'Space Grotesk', sans-serif";
+          ctx.textAlign = "center";
           ctx.fillStyle = "rgba(0,0,0,0.5)";
-          ctx.fillText(`${provData.tools.length} tools`, node.pos.x + 10, node.pos.y + 12);
+          ctx.fillText(`${provData.tools.length} tools`, node.pos.x, node.pos.y + 12);
         }
       }
 
-      // Active pulse ring
+      // Active pulse
       if (isActive) {
         const pulse = 0.3 + 0.3 * Math.sin(Date.now() / 300);
         ctx.strokeStyle = node.color;
@@ -357,7 +373,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     setActiveCount(activeC);
 
     animRef.current = requestAnimationFrame(draw);
-  }, [tick, activeTools, toolActions, catalog.providers, buildNodes]);
+  }, [tickPhysics, activeTools, toolActions, catalog.providers, buildNodes]);
 
   /* ── start / stop animation ─────────────────────────────────── */
   useEffect(() => {
@@ -365,10 +381,9 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     return () => cancelAnimationFrame(animRef.current);
   }, [draw]);
 
-  /* ── pointer events for dragging ────────────────────────────── */
+  /* ── pointer events ─────────────────────────────────────────── */
   const hitTest = useCallback((mx: number, my: number): number => {
     const nodes = nodesRef.current;
-    // Reverse order so topmost (last drawn) wins
     for (let i = nodes.length - 1; i >= 0; i--) {
       const n = nodes[i];
       if (
@@ -395,11 +410,11 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     node.vel = { x: 0, y: 0 };
     dragRef.current = { nodeIdx: idx, offset: { x: pos.x - node.pos.x, y: pos.y - node.pos.y } };
     canvasRef.current?.setPointerCapture(e.pointerId);
+    needsDrawRef.current = true;
   }, [hitTest, getCanvasPos]);
 
   const onPointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (!dragRef.current) {
-      // Cursor hint
       const pos = getCanvasPos(e);
       const idx = hitTest(pos.x, pos.y);
       canvasRef.current!.style.cursor = idx >= 0 ? "grab" : "default";
@@ -409,12 +424,18 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     const node = nodesRef.current[dragRef.current.nodeIdx];
     node.pos.x = pos.x - dragRef.current.offset.x;
     node.pos.y = pos.y - dragRef.current.offset.y;
+    needsDrawRef.current = true;
   }, [hitTest, getCanvasPos]);
 
   const onPointerUp = useCallback(() => {
     if (dragRef.current) {
-      nodesRef.current[dragRef.current.nodeIdx].pinned = false;
+      const node = nodesRef.current[dragRef.current.nodeIdx];
+      node.pinned = false;
+      // Give it a velocity kick so it springs back wobbly
+      node.vel.x = (node.rest.x - node.pos.x) * 0.15;
+      node.vel.y = (node.rest.y - node.pos.y) * 0.15;
       dragRef.current = null;
+      needsDrawRef.current = true;
     }
   }, []);
 
