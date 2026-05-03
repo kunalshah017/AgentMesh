@@ -35,6 +35,19 @@ function formatResult(data: unknown): string {
         // Not valid JSON — fall through
       }
     }
+    // Check for embedded JSON array after a newline (e.g. "✓ description\n[{...}]")
+    const jsonIdx = data.indexOf("\n[");
+    if (jsonIdx !== -1) {
+      const prefix = data.slice(0, jsonIdx).trim();
+      const jsonPart = data.slice(jsonIdx + 1).trim();
+      try {
+        const parsed = JSON.parse(jsonPart);
+        const table = formatResult(parsed);
+        return prefix ? `${prefix}\n\n${table}` : table;
+      } catch {
+        // Not valid JSON — fall through
+      }
+    }
     return data;
   }
   if (Array.isArray(data)) {
@@ -197,7 +210,7 @@ export function ChatPanel({ events, onSendGoal, status, walletConnected, wrongCh
           if (event._fromHistory && event.message) {
             msgs.push({
               role: "mesh",
-              content: String(event.message),
+              content: formatResult(event.message),
               timestamp: ts,
               eventType: (event.eventType as string) ?? undefined,
             });
