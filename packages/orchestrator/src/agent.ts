@@ -226,7 +226,12 @@ export class OrchestratorAgent {
       const plan = await this.planTask(goal);
       task.subtasks = plan;
 
-      // If no subtasks, it's a conversational message — respond directly
+      // If no subtasks AND goal doesn't look like a tool request, respond conversationally
+      // const looksLikeToolRequest =
+      //   /price|yield|swap|trade|balance|risk|audit|protocol|tvl|token|deposit|stake|portfolio/i.test(goal);
+      // if (task.subtasks.length === 0 && looksLikeToolRequest) {
+      //   task.subtasks = this.planTaskFallback(goal);
+      // }
       if (task.subtasks.length === 0) {
         let reply =
           "Hello! I'm AgentMesh — a DeFi agent orchestrator. I can help with DeFi research, risk analysis, yield scanning, protocol stats, and executing swaps. What would you like to do?";
@@ -362,13 +367,8 @@ export class OrchestratorAgent {
    * Use LLM to break a goal into subtasks. Falls back to keyword-based planning.
    */
   private async planTask(goal: string): Promise<SubTask[]> {
-    // Try LLM-based planning first
-    try {
-      return await this.planTaskWithLLM(goal);
-    } catch {
-      // Fallback: keyword-based planning
-      return this.planTaskFallback(goal);
-    }
+    // LLM-only planning (keyword fallback disabled for testing)
+    return await this.planTaskWithLLM(goal);
   }
 
   private planTaskFallback(goal: string): SubTask[] {
@@ -467,9 +467,12 @@ export class OrchestratorAgent {
 Available tools:
 ${toolSummary}
 
-IMPORTANT: If the user's message is conversational (greeting, question about you, thanks, etc.) and does NOT require any tool execution, respond with an empty array: []
+RULES:
+1. If the user asks about prices, tokens, protocols, yields, swaps, balances, risk, or ANY DeFi-related data — you MUST return a tool call. These are NOT conversational.
+2. ONLY return an empty array [] for pure greetings ("hi", "hello", "thanks") or questions about yourself ("who are you", "what can you do").
+3. "What's the price of X" → use token-info. "Show me yields" → use scan-yields. "How risky is X" → use risk-assess.
 
-Otherwise respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]
+Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]
 Use exact tool names from the list above. If unsure, use the closest match.`;
 
     const response = await this.llm.chat.completions.create({
@@ -495,7 +498,7 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
       return parsed.map((item) => ({
         id: uuid(),
         parentId: "",
-        description: item.description,
+        description: item.description ?? goal,
         assignedTool: item.tool ?? item.capability ?? "defi-research",
         status: "pending" as const,
       }));
@@ -862,8 +865,8 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
    * Map a subtask to the best tool name.
    */
   private resolveToolName(subtask: SubTask): string {
-    const desc = subtask.description.toLowerCase();
-    const cap = subtask.assignedTool.toLowerCase();
+    const desc = (subtask.description ?? "").toLowerCase();
+    const cap = (subtask.assignedTool ?? "").toLowerCase();
 
     // Keyword matching from description
     if (

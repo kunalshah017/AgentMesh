@@ -153,7 +153,7 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
   app.use((_req, res, next) => {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Headers", "Content-Type");
-    res.header("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.header("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
     next();
   });
 
