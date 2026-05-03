@@ -505,34 +505,37 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
       }>;
 
       // Valid tool names from the catalog
-      const validTools = new Set(this.toolCatalog.getAllTools().map((t) => t.name));
+      const validTools = new Set(
+        this.toolCatalog.getAllTools().map((t) => t.name),
+      );
 
       return parsed.map((item) => {
         const rawTool = item.tool ?? item.capability ?? "";
-        // Use LLM's tool name if it matches a real tool, otherwise resolve via keywords
+        // Use LLM's tool name if it matches a real tool
         const subtask: SubTask = {
           id: uuid(),
           parentId: "",
           description: item.description ?? goal,
-          assignedTool: validTools.has(rawTool) ? rawTool : "",
+          assignedTool: validTools.has(rawTool) ? rawTool : rawTool,
           status: "pending" as const,
         };
-        // If LLM gave an invalid name, resolve from description keywords
-        if (!subtask.assignedTool) {
-          subtask.assignedTool = this.resolveToolName(subtask);
-        }
+        // Keyword fallback DISABLED for LLM testing
+        // if (!subtask.assignedTool) {
+        //   subtask.assignedTool = this.resolveToolName(subtask);
+        // }
         return subtask;
       });
     } catch {
-      // Fallback: single subtask, resolve from goal keywords
+      // Fallback: single subtask — use raw goal as tool name (no keyword resolution)
       const subtask: SubTask = {
         id: uuid(),
         parentId: "",
         description: goal,
-        assignedTool: "",
+        assignedTool: "unknown",
         status: "pending" as const,
       };
-      subtask.assignedTool = this.resolveToolName(subtask);
+      // Keyword fallback DISABLED for LLM testing
+      // subtask.assignedTool = this.resolveToolName(subtask);
       return [subtask];
     }
   }
