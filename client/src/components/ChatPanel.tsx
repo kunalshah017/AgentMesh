@@ -79,6 +79,14 @@ export function ChatPanel({ events, onSendGoal, status, walletConnected, wrongCh
   const [userGoals, setUserGoals] = useState<{ goal: string; ts: number }[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // Clear user goals when events are reset (new chat)
+  useEffect(() => {
+    if (events.length === 0) {
+      setUserGoals([]);
+      setLoading(false);
+    }
+  }, [events]);
+
   // Build chat messages from events + user goals
   const messages = useMemo(() => {
     const initialMsg = status === "connected"
