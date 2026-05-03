@@ -24,7 +24,19 @@ interface Message {
 }
 
 function formatResult(data: unknown): string {
-  if (typeof data === "string") return data;
+  if (typeof data === "string") {
+    // Try to parse JSON strings — tool results often come back as stringified JSON
+    const trimmed = data.trim();
+    if (trimmed.startsWith("[") || trimmed.startsWith("{")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return formatResult(parsed); // Re-run with parsed data
+      } catch {
+        // Not valid JSON — fall through
+      }
+    }
+    return data;
+  }
   if (Array.isArray(data)) {
     // If array of objects, render as markdown table
     const objects = data.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null);
