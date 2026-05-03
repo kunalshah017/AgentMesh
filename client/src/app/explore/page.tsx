@@ -231,8 +231,8 @@ function ProviderCard({ provider }: { provider: CatalogProvider }) {
                                         <span className="text-xs">⚡</span>
                                         <span className="font-bold text-sm">{tool.name}</span>
                                     </div>
-                                    <span className="text-[10px] font-bold text-green-700 bg-green-100 border border-green-300 px-2 py-0.5 rounded-sm">
-                                        x402
+                                    <span className="text-[10px] font-black text-green-700 bg-green-100 border border-green-300 px-2 py-0.5 rounded-sm">
+                                        {tool.price ? `${tool.price} USDC` : "x402"}
                                     </span>
                                 </div>
                                 <p className="text-xs opacity-60 mt-1 ml-5">{tool.description}</p>
@@ -263,8 +263,8 @@ function ToolCard({ tool }: { tool: CatalogTool }) {
                     <span className="text-xs">⚡</span>
                     <span className="font-black text-sm">{tool.name}</span>
                 </div>
-                <span className="text-[10px] font-bold text-green-700 bg-green-100 border border-green-300 px-1.5 py-0.5 rounded-sm">
-                    x402
+                <span className="text-[10px] font-black text-green-700 bg-green-100 border border-green-300 px-1.5 py-0.5 rounded-sm">
+                    {tool.price ? `${tool.price} USDC` : "x402"}
                 </span>
             </div>
             <p className="text-xs opacity-60 mb-3 line-clamp-2">{tool.description}</p>

@@ -10,6 +10,7 @@ export interface CatalogTool {
   inputSchema?: Record<string, unknown>;
   providerName: string;
   providerEndpoint: string;
+  price?: string;
 }
 
 export interface CatalogProvider {
@@ -52,54 +53,63 @@ const FALLBACK_CATALOG: CatalogData = {
           description: "Scan DeFi protocols for yield opportunities",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.02",
         },
         {
           name: "token-info",
           description: "Get token price and market data from CoinGecko",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.01",
         },
         {
           name: "protocol-stats",
           description: "Get protocol TVL and statistics from DeFi Llama",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.01",
         },
         {
           name: "risk-assess",
           description: "Assess risk of a DeFi protocol",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.03",
         },
         {
           name: "contract-audit",
           description: "Check smart contract audit status",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.05",
         },
         {
           name: "execute-swap",
           description: "Execute a token swap via Uniswap (live quotes)",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.05",
         },
         {
           name: "execute-deposit",
           description: "Deposit tokens into a DeFi protocol",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.05",
         },
         {
           name: "check-balance",
           description: "Check wallet token balances on-chain",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.01",
         },
         {
           name: "pay-with-any-token",
           description: "Auto-swap any token to USDC for x402 payment",
           providerName: "agent-mesh.eth",
           providerEndpoint: "https://agent-mesh-orchestrator.onrender.com/mcp",
+          price: "0.02",
         },
       ],
       status: "online",

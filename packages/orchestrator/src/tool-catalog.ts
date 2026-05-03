@@ -7,6 +7,7 @@ import type {
   CatalogProvider,
   CatalogResponse,
 } from "@agentmesh/shared";
+import { TOOL_PRICES } from "@agentmesh/shared";
 
 /**
  * MCP tools/list response format
@@ -159,6 +160,10 @@ export class ToolCatalog {
         providerToolList.push(discovered);
       }
       this.providerTools.set(provider.ensName, providerToolList);
+
+      // Probe x402 prices for each tool (non-blocking)
+      this.probeToolPrices(provider, providerToolList).catch(() => {});
+
       return providerToolList.length;
     } catch {
       // Network error — register fallback tools from capabilities
@@ -185,6 +190,55 @@ export class ToolCatalog {
       providerToolList.push(discovered);
     }
     this.providerTools.set(provider.ensName, providerToolList);
+  }
+
+  /**
+   * Probe x402 prices for a provider's tools by sending a dummy tools/call
+   * request without payment. If the server returns 402, extract the price.
+   */
+  private async probeToolPrices(
+    provider: AgentIdentity,
+    tools: DiscoveredTool[],
+  ): Promise<void> {
+    if (!provider.endpoint) return;
+
+    // Probe each tool in parallel (with short timeout)
+    await Promise.allSettled(
+      tools.map(async (tool) => {
+        try {
+          const response = await fetch(provider.endpoint!, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              jsonrpc: "2.0",
+              method: "tools/call",
+              id: 0,
+              params: { name: tool.name, arguments: {} },
+            }),
+            signal: AbortSignal.timeout(3000),
+          });
+
+          if (response.status === 402) {
+            // Extract price from x402 response
+            const priceHeader = response.headers.get("X-Payment-Amount");
+            if (priceHeader) {
+              tool.price = priceHeader;
+            } else {
+              // Try JSON body
+              try {
+                const body = (await response.json()) as { amount?: string };
+                if (body.amount) tool.price = body.amount;
+              } catch {
+                // ignore
+              }
+            }
+          }
+          // Non-402 responses mean the tool is free or doesn't enforce x402
+        } catch {
+          // Network error — skip price discovery for this tool
+        }
+      }),
+    );
   }
 
   /**
@@ -228,6 +282,7 @@ export class ToolCatalog {
       providerEndpoint: provider.endpoint,
       keywords: t.keywords,
       example: t.example,
+      price: TOOL_PRICES[t.name as keyof typeof TOOL_PRICES] ?? "0.01",
     }));
 
     for (const tool of providerToolList) {

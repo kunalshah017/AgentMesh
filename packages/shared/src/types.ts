@@ -18,6 +18,7 @@ export interface DiscoveredTool {
   providerEndpoint: string; // Provider's MCP endpoint URL
   keywords?: string[]; // Trigger keywords for LLM planner (auto-generated guide)
   example?: string; // Example user query → tool mapping for LLM planner
+  price?: string; // x402 price in USDC (e.g. "0.01")
 }
 
 // --- Catalog Provider (provider + its discovered tools, for frontend consumption) ---
