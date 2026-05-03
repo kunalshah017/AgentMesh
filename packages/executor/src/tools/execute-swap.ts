@@ -12,6 +12,13 @@ interface SwapResult {
   route: string;
   gasEstimate?: string;
   priceImpact?: string;
+  // Transaction data for on-chain execution
+  transaction?: {
+    to: string;
+    data: string;
+    value: string;
+    chainId: number;
+  };
 }
 
 interface UniswapQuoteResponse {
@@ -41,6 +48,7 @@ export async function executeSwap(
   tokenOut: string,
   amount: string,
   chain?: string,
+  swapperAddress?: string,
 ): Promise<SwapResult> {
   const chainId = getChainId(chain ?? "ethereum");
   console.log(
@@ -66,8 +74,9 @@ export async function executeSwap(
     const decimals = TOKEN_DECIMALS[tokenIn.toUpperCase()] ?? 18;
     const amountInWei = toBaseUnits(amount, decimals);
 
-    // Use a demo swapper address (read-only quote, no tx broadcast)
+    // Use provided swapper address for real execution, fallback to demo address for quotes
     const swapper =
+      swapperAddress ??
       process.env.SWAPPER_ADDRESS ??
       "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 
@@ -117,13 +126,20 @@ export async function executeSwap(
     const outputAmount = data.quote?.output?.amount ?? "0";
     const amountOut = fromBaseUnits(outputAmount, outDecimals);
 
-    // Quote is real — execution requires wallet signing (not done here)
-    // Return quote result with status "pending" (awaiting wallet signature)
+    // Build transaction data if calldata is available (real user as swapper)
+    const methodParams = data.quote?.methodParameters;
+    const transaction = methodParams
+      ? {
+          to: methodParams.to,
+          data: methodParams.calldata,
+          value: methodParams.value,
+          chainId,
+        }
+      : undefined;
+
     return {
-      status: "pending",
-      txHash: data.quote?.methodParameters
-        ? `0x${data.requestId?.replace(/-/g, "")}`
-        : undefined,
+      status: transaction ? "pending" : "pending",
+      txHash: undefined,
       tokenIn: tokenIn.toUpperCase(),
       tokenOut: tokenOut.toUpperCase(),
       amountIn: amount,
@@ -135,6 +151,7 @@ export async function executeSwap(
       priceImpact: data.quote?.priceImpact
         ? `${data.quote.priceImpact.percent}%`
         : undefined,
+      transaction,
     };
   } catch (error) {
     console.log(`   ❌ Uniswap API error: ${error}`);
