@@ -3,7 +3,7 @@
 import { ethers } from "ethers";
 import { KEEPERHUB, ZERO_G } from "./constants.js";
 
-const REPUTATION_TRACKER_ADDRESS = "0x2B8C2D313300122e0Fd90a3B7F4e3f0Bb05E2Cf4";
+const REPUTATION_TRACKER_ADDRESS = "0xc9EF38Ba33BcFD35b04c8255564473B656F099aB";
 
 // Cached session
 let sessionId: string | null = null;
