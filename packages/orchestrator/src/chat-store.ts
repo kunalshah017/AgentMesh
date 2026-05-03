@@ -294,7 +294,7 @@ class ChatStore {
     return this.getUserChats(walletAddress).get(chatId);
   }
 
-  /** Add a message to a chat and persist to 0G (debounced) */
+  /** Add a message to a chat (in-memory only — call flushChat when task is done) */
   addMessage(
     walletAddress: string,
     chatId: string,
@@ -317,19 +317,23 @@ class ChatStore {
     chat.messages.push(message);
     chat.updatedAt = Date.now();
 
-    // Debounce: only persist after 5s of no new messages (batches user + assistant msgs)
+    return message;
+  }
+
+  /** Flush a chat to 0G storage (call once when agent is done responding) */
+  flushChat(walletAddress: string, chatId: string): void {
+    const chat = this.getChat(walletAddress, chatId);
+    if (!chat || chat.messages.length === 0) return;
+
+    // Cancel any pending debounce timer
     const timerKey = `${walletAddress}/${chatId}`;
     const existing = this.persistTimers.get(timerKey);
-    if (existing) clearTimeout(existing);
-    this.persistTimers.set(
-      timerKey,
-      setTimeout(() => {
-        this.persistTimers.delete(timerKey);
-        this.persistChatAndIndex(chat);
-      }, 5000),
-    );
+    if (existing) {
+      clearTimeout(existing);
+      this.persistTimers.delete(timerKey);
+    }
 
-    return message;
+    this.persistChatAndIndex(chat);
   }
 
   /** Delete a chat */
