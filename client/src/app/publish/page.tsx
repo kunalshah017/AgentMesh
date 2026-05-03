@@ -1,6 +1,8 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/Navbar";
+import { StickerLayer } from "@/components/StickerLayer";
 import { useAccount, useConnect, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { useState, useEffect, useCallback } from "react";
 import { REGISTRY_ADDRESS, REGISTRY_ABI } from "@/config/contracts";
@@ -129,9 +131,15 @@ export default function PublishPage() {
     };
 
     return (
-        <div className="min-h-screen bg-neo-bg">
+        <div className="relative min-h-screen bg-neo-bg">
             {/* Nav */}
             <Navbar />
+
+            <StickerLayer
+                stickers={[
+                    { src: "/mascots/publish-page-mascot.png", width: 140, rotate: -2, position: { xPercent: 78, yPercent: 3 } },
+                ]}
+            />
 
             <main className="max-w-3xl mx-auto px-6 py-12">
                 <h2 className="text-3xl md:text-4xl font-black uppercase mb-2">Publish Your MCP Server</h2>

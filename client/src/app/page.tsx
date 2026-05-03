@@ -1,15 +1,29 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Navbar } from "@/components/Navbar";
+import { StickerLayer } from "@/components/StickerLayer";
 
-const TOOLS = [
-  { name: "orchestrator", ensName: "orchestrator.agent-mesh.eth", icon: "🧠", role: "Brain", capabilities: ["task-planning", "tool-discovery", "orchestration"], color: "bg-red-100 border-red-400", type: "BRAIN" },
-  { name: "researcher", ensName: "researcher.agent-mesh.eth", icon: "🔍", role: "DeFi Scanner", capabilities: ["defi-research", "scan-yields", "token-info"], color: "bg-blue-100 border-blue-400", type: "TOOL" },
-  { name: "analyst", ensName: "analyst.agent-mesh.eth", icon: "⚠️", role: "Risk Assessment", capabilities: ["risk-analysis", "contract-audit"], color: "bg-yellow-100 border-yellow-400", type: "TOOL" },
-  { name: "executor", ensName: "executor.agent-mesh.eth", icon: "🔧", role: "Onchain Execution", capabilities: ["execute-swap", "check-balance", "execute-deposit"], color: "bg-purple-100 border-purple-400", type: "TOOL" },
-  { name: "gas-optimizer", ensName: "gas-optimizer.agent-mesh.eth", icon: "⛽", role: "Fee Prediction", capabilities: ["gas-prediction", "fee-estimation"], color: "bg-green-100 border-green-400", type: "TOOL" },
+const ShapeGrid = dynamic(() => import("@/components/ShapeGrid"), { ssr: false });
+
+const MCP_TOOLS = [
+  { name: "scan-yields", price: "0.02", description: "Scan DeFi protocols for yield opportunities", category: "research" },
+  { name: "token-info", price: "0.01", description: "Get token price and market data from CoinGecko", category: "research" },
+  { name: "protocol-stats", price: "0.01", description: "Get protocol TVL and statistics from DeFi Llama", category: "research" },
+  { name: "risk-assess", price: "0.03", description: "Assess risk of a DeFi protocol", category: "risk" },
+  { name: "contract-audit", price: "0.05", description: "Check smart contract audit status", category: "risk" },
+  { name: "execute-swap", price: "0.05", description: "Execute a token swap via Uniswap", category: "execution" },
+  { name: "execute-deposit", price: "0.05", description: "Deposit tokens into a DeFi protocol", category: "execution" },
+  { name: "check-balance", price: "0.01", description: "Check wallet token balances on-chain", category: "execution" },
+  { name: "pay-with-any-token", price: "0.02", description: "Auto-swap any token to USDC for x402 payment", category: "execution" },
 ];
+
+const CATEGORY_COLORS: Record<string, string> = {
+  research: "bg-blue-100 border-blue-400",
+  risk: "bg-yellow-100 border-yellow-400",
+  execution: "bg-purple-100 border-purple-400",
+};
 
 const SPONSORS = [
   { name: "0G", layers: "Compute + Storage + Chain", what: "LLM inference, KV storage, smart contracts", color: "bg-black text-white" },
@@ -20,21 +34,44 @@ const SPONSORS = [
 ];
 
 const STATS = [
-  { label: "Registered Tools", value: "5", sub: "on-chain" },
-  { label: "Capabilities", value: "15+", sub: "indexed" },
+  { label: "MCP Tools", value: "9", sub: "discoverable" },
+  { label: "Providers", value: "1", sub: "on-chain" },
   { label: "Reputation Txs", value: "4", sub: "verified" },
   { label: "Avg Response", value: "<1s", sub: "per call" },
 ];
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-neo-bg">
+    <div className="relative min-h-screen bg-neo-bg">
       {/* Nav */}
       <Navbar />
 
+      {/* Draggable Stickers — freely movable across entire page */}
+      <StickerLayer
+        stickers={[
+          { src: "/mascots/orchestrator-mascot.png", width: 280, rotate: -2, position: { xPercent: 72, yPercent: 4 } },
+          { src: "/mascots/explore-page-mascot.png", width: 110, rotate: 3, position: { xPercent: 85, yPercent: 25 } },
+          { src: "/mascots/achitecture-mascot.png", width: 200, rotate: -1, position: { xPercent: 78, yPercent: 38 } },
+          { src: "/mascots/publish-page-mascot.png", width: 130, rotate: 2, position: { xPercent: 82, yPercent: 80 } },
+        ]}
+      />
+
       {/* Hero */}
-      <section className="border-b-4 border-black px-6 py-16 md:py-24 bg-neo-white">
-        <div className="max-w-5xl mx-auto">
+      <section className="relative border-b-4 border-black px-6 py-16 md:py-24 bg-neo-white overflow-hidden">
+        {/* Animated shape grid background */}
+        <div className="absolute inset-0 opacity-[0.15]">
+          <ShapeGrid
+            speed={0.3}
+            squareSize={48}
+            direction="diagonal"
+            borderColor="#000000"
+            hoverFillColor="#FF6B6B"
+            shape="square"
+            hoverTrailAmount={6}
+          />
+        </div>
+
+        <div className="relative max-w-5xl mx-auto">
           <div className="bg-neo-secondary border-4 border-black px-3 py-1 inline-block shadow-[3px_3px_0px_0px_#000] mb-6 -rotate-1">
             <span className="text-xs font-black uppercase">ETHGlobal Open Agents 2026</span>
           </div>
@@ -44,8 +81,7 @@ export default function Home() {
             {" "}— Decentralized
           </h2>
           <p className="text-lg md:text-xl mt-6 max-w-3xl font-medium leading-relaxed">
-            Deploy an MCP tool. Register it on-chain. Get discovered by AI agents.
-            Get paid per call via x402 micropayments. No approval process. No GPU required.
+            Ship a tool. Get paid per call. No GPU, no gatekeepers — just code and USDC.
           </p>
 
           {/* Flow diagram */}
@@ -77,6 +113,7 @@ export default function Home() {
               GitHub ↗
             </a>
           </div>
+
         </div>
       </section>
 
@@ -102,10 +139,28 @@ export default function Home() {
           </div>
           <div className="flex items-center gap-4 text-xs font-bold">
             <a href="https://sepolia.basescan.org/tx/0x68eb13ba381adee4ccce928461f4f4b0116f460f505b4d1c6968a4868e56927c" target="_blank" rel="noopener noreferrer" className="hover:underline">
-              0.01 USDC → Researcher ↗
+              0.01 USDC → token-info ↗
             </a>
             <a href="https://sepolia.basescan.org/tx/0x76d2f9047e3d96066fb975a0a15e549cdd32352171ab42d0ce089db96d256551" target="_blank" rel="noopener noreferrer" className="hover:underline">
-              0.05 USDC → Executor ↗
+              0.05 USDC → execute-swap ↗
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* On-Chain Registry Banner */}
+      <section className="border-b-4 border-black bg-neo-muted px-6 py-4">
+        <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <span className="bg-black text-white px-2 py-0.5 text-[10px] font-black uppercase">ENS ON-CHAIN</span>
+            <span className="text-sm font-black">AgentRegistry deployed on 0G Chain testnet</span>
+          </div>
+          <div className="flex items-center gap-4 text-xs font-bold">
+            <a href="https://chainscan-newton.0g.ai/address/0x617eDCC3068774492a20E2B5d23f155e0CCA73Db" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              AgentRegistry ↗
+            </a>
+            <a href="https://chainscan-newton.0g.ai/address/0xc9EF38Ba33BcFD35b04c8255564473B656F099aB" target="_blank" rel="noopener noreferrer" className="hover:underline">
+              ReputationTracker ↗
             </a>
           </div>
         </div>
@@ -114,7 +169,9 @@ export default function Home() {
       {/* How It Works */}
       <section className="border-b-4 border-black px-6 py-16 bg-neo-white">
         <div className="max-w-5xl mx-auto">
-          <h3 className="text-3xl font-black uppercase mb-10">How It Works</h3>
+          <div className="flex items-center gap-6 mb-10">
+            <h3 className="text-3xl font-black uppercase">How It Works</h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[
               { step: "1", title: "Deploy & Register", desc: "Build a lightweight MCP tool (no GPU needed). Register it on-chain with capabilities and pricing. Done in 5 minutes.", icon: "📦" },
@@ -139,11 +196,15 @@ export default function Home() {
       {/* Architecture */}
       <section className="border-b-4 border-black px-6 py-16 bg-neo-muted">
         <div className="max-w-5xl mx-auto">
-          <h3 className="text-3xl font-black uppercase mb-4">Architecture: 1 Brain + N Tools</h3>
-          <p className="text-sm font-medium mb-8 max-w-2xl">
-            Only the Orchestrator runs AI (0G Compute). Tool providers are lightweight deterministic functions —
-            no GPU, no LLM, just input → output. Anyone can host a tool on a $5 VPS.
-          </p>
+          <div className="flex flex-col md:flex-row items-start gap-6 mb-8">
+            <div className="flex-1">
+              <h3 className="text-3xl font-black uppercase mb-4">Architecture: 1 Brain + N Tools</h3>
+              <p className="text-sm font-medium max-w-2xl">
+                Only the Orchestrator runs AI (0G Compute). Tool providers are lightweight deterministic functions —
+                no GPU, no LLM, just input → output. Anyone can host a tool on a $5 VPS.
+              </p>
+            </div>
+          </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Brain */}
@@ -173,36 +234,55 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Tool Registry */}
+      {/* MCP Tool Marketplace */}
       <section className="border-b-4 border-black px-6 py-16 bg-neo-white">
         <div className="max-w-5xl mx-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h3 className="text-3xl font-black uppercase">Tool Registry</h3>
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-3xl font-black uppercase">MCP Tool Marketplace</h3>
             <div className="bg-green-400 border-3 border-black px-3 py-1 shadow-[3px_3px_0px_0px_#000]">
-              <span className="text-xs font-black uppercase">Live On-Chain</span>
+              <span className="text-xs font-black uppercase">x402 Priced</span>
+            </div>
+          </div>
+          <p className="text-sm font-medium mb-8 max-w-2xl">
+            Every tool is an MCP endpoint. Prices are discovered at runtime via x402 (HTTP 402).
+            The Orchestrator calls <code className="bg-neo-bg px-1 border border-black text-xs">tools/list</code> on each provider to discover available tools.
+          </p>
+
+          {/* Provider card */}
+          <div className="border-4 border-black p-5 shadow-[6px_6px_0px_0px_#000] bg-neo-bg mb-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">🌐</span>
+                <div>
+                  <div className="font-black uppercase text-lg">AgentMesh</div>
+                  <div className="mono text-[10px] opacity-60">agent-mesh.eth</div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="bg-green-400 border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase">ONLINE</span>
+                <span className="bg-neo-muted border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase">9 TOOLS</span>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-1 mb-2">
+              {["defi-research", "yield-scanning", "risk-analysis", "execution", "token-swaps"].map((cat) => (
+                <span key={cat} className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                  {cat}
+                </span>
+              ))}
             </div>
           </div>
 
+          {/* Tools grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {TOOLS.map((tool) => (
-              <div key={tool.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${tool.color}`}>
+            {MCP_TOOLS.map((tool) => (
+              <div key={tool.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${CATEGORY_COLORS[tool.category]}`}>
                 <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{tool.icon}</span>
-                    <span className="font-black uppercase text-sm">{tool.name}</span>
-                  </div>
-                  <span className={`px-2 py-0.5 text-[9px] font-black uppercase ${tool.type === "BRAIN" ? "bg-black text-white" : "bg-white border border-black"}`}>
-                    {tool.type}
+                  <span className="font-black text-sm">{tool.name}</span>
+                  <span className="bg-green-100 border border-green-400 px-2 py-0.5 text-[9px] font-black text-green-700">
+                    {tool.price} USDC
                   </span>
                 </div>
-                <div className="mono text-[10px] opacity-60 mb-2">{tool.ensName}</div>
-                <div className="flex flex-wrap gap-1">
-                  {tool.capabilities.map((cap) => (
-                    <span key={cap} className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                      {cap}
-                    </span>
-                  ))}
-                </div>
+                <div className="text-xs opacity-80 leading-relaxed">{tool.description}</div>
               </div>
             ))}
 
@@ -211,6 +291,12 @@ export default function Home() {
               <span className="text-3xl mb-2">➕</span>
               <span className="font-black text-sm uppercase">Your Tool Here</span>
               <span className="text-[10px] mt-1 opacity-60">Deploy → Register → Earn</span>
+            </Link>
+          </div>
+
+          <div className="mt-6 text-center">
+            <Link href="/explore" className="text-sm font-black uppercase underline hover:no-underline">
+              View full catalog on /explore →
             </Link>
           </div>
         </div>
@@ -235,7 +321,9 @@ export default function Home() {
       {/* Publish Your Tool */}
       <section className="border-b-4 border-black px-6 py-16 bg-neo-accent">
         <div className="max-w-5xl mx-auto">
-          <h3 className="text-3xl font-black uppercase mb-6">Publish Your Own Tool</h3>
+          <div className="flex items-center gap-6 mb-6">
+            <h3 className="text-3xl font-black uppercase">Publish Your Own Tool</h3>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">
               <div className="font-black text-lg mb-2">1. Build</div>
@@ -252,8 +340,8 @@ export default function Home() {
               <pre className="text-[11px] bg-black text-green-400 p-3 overflow-x-auto border-2 border-black">
                 {`bun run register-tool.ts \\
   --name "my-tool" \\
-  --capabilities "x,y" \\
-  --price "0.01"`}
+  --endpoint "https://..." \\
+  --categories "defi,risk"`}
               </pre>
             </div>
             <div className="border-4 border-black p-5 bg-neo-white shadow-[4px_4px_0px_0px_#000]">

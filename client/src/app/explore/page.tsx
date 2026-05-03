@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Navbar } from "@/components/Navbar";
+import { StickerLayer } from "@/components/StickerLayer";
 import { useState } from "react";
 import { useCatalog, type CatalogProvider, type CatalogTool } from "@/hooks/useCatalog";
 
@@ -64,8 +65,14 @@ export default function ExplorePage() {
     const totalTools = providers.reduce((sum, p) => sum + p.tools.length, 0);
 
     return (
-        <div className="min-h-screen bg-neo-bg">
+        <div className="relative min-h-screen bg-neo-bg">
             <Navbar />
+
+            <StickerLayer
+                stickers={[
+                    { src: "/mascots/explore-page-mascot.png", width: 130, rotate: 2, position: { xPercent: 82, yPercent: 3 } },
+                ]}
+            />
 
             <main className="max-w-6xl mx-auto px-6 py-12">
                 {/* Header */}
