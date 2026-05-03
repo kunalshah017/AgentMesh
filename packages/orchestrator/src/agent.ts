@@ -297,10 +297,11 @@ export class OrchestratorAgent {
           }
           tool = tools[0];
         }
+        const resolvedToolName = this.resolveToolName(subtask);
         this.emit({
           type: "tool_called",
           tool: tool.ensName,
-          toolName: subtask.assignedTool,
+          toolName: resolvedToolName,
           method: subtask.description,
         });
 
