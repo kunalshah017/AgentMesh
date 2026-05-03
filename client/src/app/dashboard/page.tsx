@@ -93,21 +93,22 @@ export default function Dashboard() {
         ? loadedHistory
         : events;
 
-    // Derive which nodes are currently active from recent events
-    const activeNodes = new Set<string>();
-    const recentEvents = events.slice(-10);
+    // Derive which tool names are currently active from recent events
+    const activeTools = new Set<string>();
+    const toolActions = new Map<string, string>();
+    const recentEvents = events.slice(-15);
     for (const e of recentEvents) {
-        const tool = String(e.tool ?? (e.subtask as { tool?: string })?.tool ?? "");
-        if (e.type === "tool_called" || e.type === "subtask_started" || e.type === "tool_discovered") {
-            if (tool.includes("researcher")) activeNodes.add("researcher");
-            if (tool.includes("analyst")) activeNodes.add("risk-analyst");
-            if (tool.includes("executor")) activeNodes.add("executor");
-            if (tool.includes("gas-optimizer")) activeNodes.add("gas-optimizer");
+        const toolName = String(e.tool ?? (e.subtask as { tool?: string })?.tool ?? "");
+        if (
+            toolName &&
+            (e.type === "tool_called" || e.type === "subtask_started")
+        ) {
+            activeTools.add(toolName);
+            const method = String(e.method ?? (e.subtask as { description?: string })?.description ?? "");
+            if (method) toolActions.set(toolName, method.length > 30 ? method.slice(0, 30) + "…" : method);
         }
     }
-    if (events.some((e) => e.type === "task_created" && !events.some((e2) => e2.type === "task_completed"))) {
-        activeNodes.add("orchestrator");
-    }
+    const isProcessing = events.some((e) => e.type === "task_created" && !events.some((e2) => e2.type === "task_completed"));
 
     return (
         <div className="h-screen flex flex-col bg-neo-bg overflow-hidden">
@@ -174,7 +175,7 @@ export default function Dashboard() {
                         <Group orientation="vertical" className="h-full">
                             <Panel defaultSize="60%" minSize="20%">
                                 <div className="h-full overflow-hidden">
-                                    <NetworkGraph activeNodes={activeNodes} />
+                                    <NetworkGraph activeTools={activeTools} toolActions={toolActions} />
                                 </div>
                             </Panel>
                             <Separator className="h-1 bg-black hover:bg-neo-accent transition-colors relative group">
