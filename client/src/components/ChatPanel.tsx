@@ -119,10 +119,10 @@ export function ChatPanel({ events, onSendGoal, status, walletConnected, wrongCh
         case "task_completed": {
           const result = event.result ?? event.task;
           if (typeof result === "string") {
-            // Conversational reply (no subtasks)
+            // Run through formatResult to parse JSON strings into tables
             msgs.push({
               role: "mesh",
-              content: result,
+              content: formatResult(result),
               timestamp: ts,
               eventType: "success",
             });
