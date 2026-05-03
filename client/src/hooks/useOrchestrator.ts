@@ -68,9 +68,15 @@ export function useOrchestrator(
   onAuthRejectedRef.current = onAuthRejected;
   const isAuthenticatedRef = useRef(isAuthenticated);
   isAuthenticatedRef.current = isAuthenticated;
+  const chatGenRef = useRef(0);
 
   const addEvent = useCallback((event: AgentEvent) => {
-    setEvents((prev) => [...prev, { ...event, _ts: Date.now() }]);
+    const gen = chatGenRef.current;
+    setEvents((prev) => {
+      // If generation changed (new chat started), ignore stale events
+      if (chatGenRef.current !== gen) return prev;
+      return [...prev, { ...event, _ts: Date.now() }];
+    });
   }, []);
 
   const authenticateWs = useCallback(async (ws: WebSocket) => {
@@ -300,6 +306,7 @@ export function useOrchestrator(
   );
 
   const clearEvents = useCallback(() => {
+    chatGenRef.current++;
     setEvents([]);
     setCurrentChatId(null);
   }, []);

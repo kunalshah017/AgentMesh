@@ -26,20 +26,18 @@ interface Message {
 function formatResult(data: unknown): string {
   if (typeof data === "string") return data;
   if (Array.isArray(data)) {
-    return data
-      .slice(0, 5)
-      .map((item, i) => {
-        if (typeof item === "object" && item !== null) {
-          const o = item as Record<string, unknown>;
-          const parts: string[] = [];
-          for (const [k, v] of Object.entries(o)) {
-            parts.push(`**${k}:** ${v}`);
-          }
-          return `${i + 1}. ${parts.join(" | ")}`;
-        }
-        return `${i + 1}. ${item}`;
-      })
-      .join("\n");
+    // If array of objects, render as markdown table
+    const objects = data.filter((item): item is Record<string, unknown> => typeof item === "object" && item !== null);
+    if (objects.length > 0) {
+      const keys = Object.keys(objects[0]);
+      const header = `| ${keys.join(" | ")} |`;
+      const separator = `| ${keys.map(() => "---").join(" | ")} |`;
+      const rows = objects.slice(0, 10).map(
+        (o) => `| ${keys.map((k) => String(o[k] ?? "")).join(" | ")} |`,
+      );
+      return [header, separator, ...rows].join("\n");
+    }
+    return data.map((item, i) => `${i + 1}. ${item}`).join("\n");
   }
   if (typeof data === "object" && data !== null) {
     const o = data as Record<string, unknown>;
@@ -278,8 +276,23 @@ export function ChatPanel({ events, onSendGoal, status, walletConnected, wrongCh
               {msg.role === "user" ? "YOU" : msg.role === "system" ? "SYSTEM" : "MESH"}
             </div>
             {msg.role === "mesh" ? (
-              <div className="mono text-sm break-words font-bold prose prose-sm prose-invert max-w-none prose-p:my-1 prose-table:text-xs prose-th:border prose-th:border-black/30 prose-th:px-2 prose-th:py-1 prose-td:border prose-td:border-black/30 prose-td:px-2 prose-td:py-1 prose-pre:bg-black/10 prose-pre:p-2 prose-code:text-[#FF6B6B]">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
+              <div className="mono text-sm break-words font-bold prose prose-sm prose-invert max-w-none prose-p:my-1 prose-pre:bg-black/10 prose-pre:p-2 prose-code:text-[#FF6B6B]">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table: ({ children }) => (
+                      <div className="overflow-x-auto my-2 rounded border-2 border-black">
+                        <table className="min-w-full text-xs border-collapse">{children}</table>
+                      </div>
+                    ),
+                    th: ({ children }) => (
+                      <th className="border border-black/40 bg-black/10 px-3 py-1.5 text-left font-black uppercase tracking-wider whitespace-nowrap">{children}</th>
+                    ),
+                    td: ({ children }) => (
+                      <td className="border border-black/20 px-3 py-1.5 whitespace-nowrap">{children}</td>
+                    ),
+                  }}
+                >{msg.content}</ReactMarkdown>
               </div>
             ) : (
               <pre className="mono text-sm whitespace-pre-wrap break-words font-bold">{msg.content}</pre>

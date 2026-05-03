@@ -1,9 +1,9 @@
 import { parseAbi } from "viem";
 
 export const REGISTRY_ADDRESS =
-  "0x632B1282B766fb811b3570274A86A4E83838cbDd" as const;
+  "0x617eDCC3068774492a20E2B5d23f155e0CCA73Db" as const;
 export const REPUTATION_ADDRESS =
-  "0xf59Bf05D823b01F8E65a1AfFf718Fe5437D2DA10" as const;
+  "0xc9EF38Ba33BcFD35b04c8255564473B656F099aB" as const;
 
 export const REGISTRY_ABI = parseAbi([
   "function getAgentCount() external view returns (uint256)",
