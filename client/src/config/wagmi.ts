@@ -11,7 +11,7 @@ const zgTestnet = {
     default: { http: ["https://evmrpc-testnet.0g.ai"] },
   },
   blockExplorers: {
-    default: { name: "0G Explorer", url: "https://chainscan-newton.0g.ai" },
+    default: { name: "0G Explorer", url: "https://chainscan-galileo.0g.ai" },
   },
   testnet: true,
 } as const;

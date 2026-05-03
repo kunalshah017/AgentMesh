@@ -164,19 +164,31 @@ export class OrchestratorAgent {
 
   /**
    * Refresh tool registry from on-chain AgentRegistry + ENS text records.
-   * Refresh tool registry — discovers new third-party MCP providers from
-   * on-chain AgentRegistry and ENS.  Builtin providers (agent-mesh.eth) are
-   * already registered at startup, so we skip them here.
+   * Discovers all MCP providers registered on-chain and probes their
+   * endpoints via tools/list to build the live catalog.
    */
   async refreshRegistry(): Promise<void> {
-    const existingNames = new Set(this.toolRegistry.map((t) => t.ensName));
-
-    // 1. On-chain AgentRegistry — discover third-party providers only
+    // 1. On-chain AgentRegistry — discover all active providers
     try {
       const onChainAgents = await discoverToolsFromRegistry();
+      const activeNames = new Set(onChainAgents.map((a) => a.ensName));
+
+      // Remove providers that are no longer active on-chain
+      this.toolRegistry = this.toolRegistry.filter(
+        (t) => !activeNames.has(t.ensName) || activeNames.has(t.ensName),
+      );
+      // Actually: remove any previously-registered on-chain provider that is now gone
+      this.toolRegistry = this.toolRegistry.filter((t) => {
+        // Keep providers that weren't from on-chain (e.g. ENS-only or manually added)
+        if (!t.endpoint) return true;
+        // Keep providers still active on-chain
+        if (activeNames.has(t.ensName)) return true;
+        // Remove deactivated providers
+        return false;
+      });
+
+      const existingNames = new Set(this.toolRegistry.map((t) => t.ensName));
       for (const agent of onChainAgents) {
-        // Skip our own sub-agents (legacy entries) and already-known providers
-        if (agent.ensName.endsWith(".agent-mesh.eth")) continue;
         if (existingNames.has(agent.ensName)) continue;
         this.toolRegistry.push(agent);
         existingNames.add(agent.ensName);
@@ -186,27 +198,26 @@ export class OrchestratorAgent {
       // Non-critical — continue with ENS fallback
     }
 
+    const existingNamesForENS = new Set(
+      this.toolRegistry.map((t) => t.ensName),
+    );
+
     // 2. ENS resolution (enriches with text records like x402.price)
     try {
       const ensAgents = await discoverAgentsFromENS();
       for (const agent of ensAgents) {
-        if (agent.ensName.endsWith(".agent-mesh.eth")) continue;
-        if (existingNames.has(agent.ensName)) continue;
+        if (existingNamesForENS.has(agent.ensName)) continue;
         this.toolRegistry.push(agent);
-        existingNames.add(agent.ensName);
+        existingNamesForENS.add(agent.ensName);
         this.emit({ type: "tool_discovered", tool: agent });
       }
     } catch {
       // Non-critical — ENS resolution is optional enrichment
     }
 
-    // 3. Discover individual tools from external providers via tools/list
-    // Skip our own provider (agent-mesh.eth) — already registered as built-in
-    const externalProviders = this.toolRegistry.filter(
-      (p) => p.ensName !== "agent-mesh.eth",
-    );
-    if (externalProviders.length > 0) {
-      await this.toolCatalog.discoverFromProviders(externalProviders);
+    // 3. Discover individual tools from all providers via tools/list
+    if (this.toolRegistry.length > 0) {
+      await this.toolCatalog.discoverFromProviders(this.toolRegistry);
     }
   }
 
@@ -585,10 +596,29 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
   private async summarizeResults(task: Task): Promise<string> {
     const results = task.subtasks
       .filter((s) => s.status === "completed" && s.result)
-      .map(
-        (s) =>
-          `Tool: ${s.assignedTool}\nTask: ${s.description}\nResult: ${JSON.stringify(s.result)}`,
-      );
+      .map((s) => {
+        // Extract text content from MCP tool results
+        const raw = s.result as
+          | { content?: Array<{ type: string; text: string }> }
+          | unknown;
+        let resultText: string;
+        if (
+          raw &&
+          typeof raw === "object" &&
+          "content" in raw &&
+          Array.isArray((raw as { content: unknown[] }).content)
+        ) {
+          resultText = (
+            raw as { content: Array<{ type: string; text: string }> }
+          ).content
+            .filter((c) => c.type === "text")
+            .map((c) => c.text)
+            .join("\n");
+        } else {
+          resultText = JSON.stringify(raw);
+        }
+        return `Tool: ${s.assignedTool}\nTask: ${s.description}\nResult:\n${resultText}`;
+      });
 
     if (results.length === 0) {
       const failed = task.subtasks.filter((s) => s.status === "failed");
@@ -616,7 +646,9 @@ FORMATTING RULES:
 - Format large numbers with commas and appropriate units (e.g. $1,234.56)
 - If data is empty or zero, say so clearly and suggest next steps
 - NEVER include raw JSON in your response
-- Keep it concise — no filler text`,
+- Keep it concise — no filler text
+- If the tool result already contains well-formatted markdown (tables, headers, images), preserve it AS-IS. Do not rewrite or reformat existing markdown.
+- Preserve image markdown syntax ![alt](url) exactly as returned by the tool`,
           },
           {
             role: "user",
@@ -642,10 +674,14 @@ FORMATTING RULES:
   ): Promise<unknown> {
     // Local mode: prefer local router for our own provider or any local tool
     if (this.config.localMode && this.localRouter) {
-      const toolName = this.resolveToolName(subtask);
+      const toolName = subtask.assignedTool;
       const hasLocalTool = this.localRouter.listTools().includes(toolName);
 
-      if (hasLocalTool || tool.ensName === "agent-mesh.eth") {
+      // Only use local router if the tool is actually local (not an external provider)
+      const isExternalProvider =
+        tool.ensName !== "agent-mesh.eth" && tool.endpoint?.startsWith("http");
+
+      if (hasLocalTool && !isExternalProvider) {
         // Create real x402 payment proof (EIP-712 signed)
         const price =
           TOOL_PRICES[toolName as keyof typeof TOOL_PRICES] ?? "0.01";
@@ -845,7 +881,10 @@ FORMATTING RULES:
           id: 1,
           params: {
             name: toolName,
-            arguments: { task: subtask.description },
+            arguments: {
+              task: subtask.description,
+              query: subtask.description,
+            },
           },
         }),
       });

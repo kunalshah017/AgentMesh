@@ -5,25 +5,16 @@ import dynamic from "next/dynamic";
 import { Navbar } from "@/components/Navbar";
 import { StickerLayer } from "@/components/StickerLayer";
 import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
+import { useCatalog } from "@/hooks/useCatalog";
 
 const ShapeGrid = dynamic(() => import("@/components/ShapeGrid"), { ssr: false });
-
-const MCP_TOOLS = [
-  { name: "scan-yields", price: "0.02", description: "Scan DeFi protocols for yield opportunities", category: "research" },
-  { name: "token-info", price: "0.01", description: "Get token price and market data from CoinGecko", category: "research" },
-  { name: "protocol-stats", price: "0.01", description: "Get protocol TVL and statistics from DeFi Llama", category: "research" },
-  { name: "risk-assess", price: "0.03", description: "Assess risk of a DeFi protocol", category: "risk" },
-  { name: "contract-audit", price: "0.05", description: "Check smart contract audit status", category: "risk" },
-  { name: "execute-swap", price: "0.05", description: "Execute a token swap via Uniswap", category: "execution" },
-  { name: "execute-deposit", price: "0.05", description: "Deposit tokens into a DeFi protocol", category: "execution" },
-  { name: "check-balance", price: "0.01", description: "Check wallet token balances on-chain", category: "execution" },
-  { name: "pay-with-any-token", price: "0.02", description: "Auto-swap any token to USDC for x402 payment", category: "execution" },
-];
 
 const CATEGORY_COLORS: Record<string, string> = {
   research: "bg-blue-100 border-blue-400",
   risk: "bg-yellow-100 border-yellow-400",
   execution: "bg-purple-100 border-purple-400",
+  nft: "bg-pink-100 border-pink-400",
+  default: "bg-gray-100 border-gray-400",
 };
 
 const SPONSORS = [
@@ -34,14 +25,17 @@ const SPONSORS = [
   { name: "ENS", logo: "/sponsors/ens.png", layers: "Identity", what: "Agent discovery by capability", color: "bg-sky-400 text-black" },
 ];
 
-const STATS = [
-  { label: "MCP Tools", value: "9", sub: "discoverable" },
-  { label: "Providers", value: "1", sub: "on-chain" },
-  { label: "Reputation Txs", value: "4", sub: "verified" },
-  { label: "Avg Response", value: "<1s", sub: "per call" },
-];
-
 export default function Home() {
+  const { providers, tools, isLoading } = useCatalog();
+  const totalTools = tools.length || providers.reduce((sum, p) => sum + p.tools.length, 0);
+
+  const STATS = [
+    { label: "MCP Tools", value: `${totalTools}+`, sub: "discoverable" },
+    { label: "Providers", value: `${providers.length}`, sub: "on-chain" },
+    { label: "Reputation Txs", value: "4", sub: "verified" },
+    { label: "Avg Response", value: "<1s", sub: "per call" },
+  ];
+
   return (
     <div className="relative min-h-screen bg-neo-bg">
       {/* Nav */}
@@ -157,10 +151,10 @@ export default function Home() {
             <span className="text-sm font-black">AgentRegistry deployed on 0G Chain testnet</span>
           </div>
           <div className="flex items-center gap-4 text-xs font-bold">
-            <a href="https://chainscan-newton.0g.ai/address/0x617eDCC3068774492a20E2B5d23f155e0CCA73Db" target="_blank" rel="noopener noreferrer" className="hover:underline">
+            <a href="https://chainscan-galileo.0g.ai/address/0x617eDCC3068774492a20E2B5d23f155e0CCA73Db" target="_blank" rel="noopener noreferrer" className="hover:underline">
               AgentRegistry ↗
             </a>
-            <a href="https://chainscan-newton.0g.ai/address/0xc9EF38Ba33BcFD35b04c8255564473B656F099aB" target="_blank" rel="noopener noreferrer" className="hover:underline">
+            <a href="https://chainscan-galileo.0g.ai/address/0xc9EF38Ba33BcFD35b04c8255564473B656F099aB" target="_blank" rel="noopener noreferrer" className="hover:underline">
               ReputationTracker ↗
             </a>
           </div>
@@ -258,51 +252,108 @@ export default function Home() {
             The Orchestrator calls <code className="bg-neo-bg px-1 border border-black text-xs">tools/list</code> on each provider to discover available tools.
           </p>
 
-          {/* Provider card */}
-          <div className="border-4 border-black p-5 shadow-[6px_6px_0px_0px_#000] bg-neo-bg mb-6">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🌐</span>
-                <div>
-                  <div className="font-black uppercase text-lg">AgentMesh</div>
-                  <div className="mono text-[10px] opacity-60">agent-mesh.eth</div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="bg-green-400 border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase">ONLINE</span>
-                <span className="bg-neo-muted border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase">9 TOOLS</span>
-              </div>
+          {/* Provider cards — dynamic */}
+          {isLoading ? (
+            <div className="border-4 border-dashed border-black p-8 bg-neo-bg text-center mb-6">
+              <span className="text-2xl block mb-2">⏳</span>
+              <span className="font-black text-sm uppercase">Loading providers from on-chain registry...</span>
             </div>
-            <div className="flex flex-wrap gap-1 mb-2">
-              {["defi-research", "yield-scanning", "risk-analysis", "execution", "token-swaps"].map((cat) => (
-                <span key={cat} className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase">
-                  {cat}
-                </span>
-              ))}
-            </div>
-          </div>
+          ) : (() => {
+            const mainProvider = providers.find((p) => p.ensName === "agent-mesh.eth");
+            const otherProviders = providers.filter((p) => p.ensName !== "agent-mesh.eth");
+            return (
+              <>
+                {/* Main provider — full detail */}
+                {mainProvider && (
+                  <div className="border-4 border-black p-5 shadow-[6px_6px_0px_0px_#000] bg-neo-bg mb-6">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-2xl">🌐</span>
+                        <div>
+                          <div className="font-black uppercase text-lg">{mainProvider.name}</div>
+                          <div className="mono text-[10px] opacity-60">{mainProvider.ensName}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase ${mainProvider.status === "online" ? "bg-green-400" : "bg-red-300"}`}>
+                          {mainProvider.status}
+                        </span>
+                        <span className="bg-neo-muted border-2 border-black px-2 py-0.5 text-[9px] font-black uppercase">
+                          {mainProvider.tools.length} TOOLS
+                        </span>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {mainProvider.categories.map((cat) => (
+                        <span key={cat} className="bg-white border border-black px-1.5 py-0.5 text-[9px] font-bold uppercase">
+                          {cat}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-          {/* Tools grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {MCP_TOOLS.map((tool) => (
-              <div key={tool.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${CATEGORY_COLORS[tool.category]}`}>
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-black text-sm">{tool.name}</span>
-                  <span className="bg-green-100 border border-green-400 px-2 py-0.5 text-[9px] font-black text-green-700">
-                    {tool.price} USDC
-                  </span>
+                {/* Main provider tools grid */}
+                {mainProvider && mainProvider.tools.length > 0 && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                    {mainProvider.tools.map((tool) => {
+                      const category = tool.name.includes("swap") || tool.name.includes("execute") || tool.name.includes("deposit") || tool.name.includes("balance") || tool.name.includes("pay")
+                        ? "execution"
+                        : tool.name.includes("risk") || tool.name.includes("audit")
+                          ? "risk"
+                          : "research";
+                      return (
+                        <div key={tool.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${CATEGORY_COLORS[category] || CATEGORY_COLORS.default}`}>
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-black text-sm">{tool.name}</span>
+                            {tool.price && (
+                              <span className="bg-green-100 border border-green-400 px-2 py-0.5 text-[9px] font-black text-green-700">
+                                {tool.price} USDC
+                              </span>
+                            )}
+                          </div>
+                          <div className="text-xs opacity-80 leading-relaxed">{tool.description}</div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {/* Other providers — compact */}
+                {otherProviders.length > 0 && (
+                  <div className="space-y-2 mb-6">
+                    <h4 className="text-xs font-black uppercase opacity-50 mb-2">Other Providers ({otherProviders.length})</h4>
+                    {otherProviders.map((provider) => (
+                      <div key={provider.ensName} className="border-2 border-black p-3 bg-neo-bg flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <span className="text-lg">🔧</span>
+                          <div>
+                            <span className="font-black text-sm">{provider.name}</span>
+                            <span className="text-[10px] opacity-50 ml-2">{provider.ensName}</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`border border-black px-1.5 py-0.5 text-[8px] font-black uppercase ${provider.status === "online" ? "bg-green-300" : "bg-red-200"}`}>
+                            {provider.status}
+                          </span>
+                          <span className="text-[9px] font-black opacity-60">{provider.tools.length} tools</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Publish CTA */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Link href="/publish" className="border-4 border-dashed border-black p-4 flex flex-col items-center justify-center text-center bg-neo-bg opacity-80 hover:opacity-100 transition-opacity">
+                    <span className="text-3xl mb-2">➕</span>
+                    <span className="font-black text-sm uppercase">Your Tool Here</span>
+                    <span className="text-[10px] mt-1 opacity-60">Deploy → Register → Earn</span>
+                  </Link>
                 </div>
-                <div className="text-xs opacity-80 leading-relaxed">{tool.description}</div>
-              </div>
-            ))}
-
-            {/* Publish CTA card */}
-            <Link href="/publish" className="border-4 border-dashed border-black p-4 flex flex-col items-center justify-center text-center bg-neo-bg opacity-80 hover:opacity-100 transition-opacity">
-              <span className="text-3xl mb-2">➕</span>
-              <span className="font-black text-sm uppercase">Your Tool Here</span>
-              <span className="text-[10px] mt-1 opacity-60">Deploy → Register → Earn</span>
-            </Link>
-          </div>
+              </>
+            );
+          })()}
 
           <div className="mt-6 text-center">
             <Link href="/explore" className="text-sm font-black uppercase underline hover:no-underline">

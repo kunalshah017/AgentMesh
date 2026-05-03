@@ -79,6 +79,21 @@ export class ToolCatalog {
       (p) => p.endpoint && p.endpoint.startsWith("http"),
     );
 
+    // Remove tools/providers no longer in the active registry
+    const activeProviderNames = new Set(providers.map((p) => p.ensName));
+    for (const [name, tool] of this.tools) {
+      if (!activeProviderNames.has(tool.providerName)) {
+        this.tools.delete(name);
+      }
+    }
+    for (const key of this.providerTools.keys()) {
+      if (!activeProviderNames.has(key)) {
+        this.providerTools.delete(key);
+        this.providerStatus.delete(key);
+        this.providerMeta.delete(key);
+      }
+    }
+
     // Store provider metadata for catalog response
     for (const provider of providers) {
       this.providerMeta.set(provider.ensName, provider);

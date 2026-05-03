@@ -181,7 +181,8 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
   });
 
   // Discovered tools catalog (individual tools from all providers via tools/list)
-  app.get("/catalog", (_req, res) => {
+  app.get("/catalog", async (_req, res) => {
+    await agent.refreshRegistry();
     res.json(agent.getCatalog());
   });
 
@@ -225,13 +226,27 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
         });
         break;
 
-      case "tools/list":
+      case "tools/list": {
+        // Local tools (orchestrator's own) + dynamically discovered from on-chain providers
+        const catalog = agent.getCatalog();
+        const discoveredTools = catalog.tools.map((t) => ({
+          name: t.name,
+          description: t.description,
+          ...(t.inputSchema ? { inputSchema: t.inputSchema } : {}),
+        }));
+        // Merge: local MCP_TOOLS first, then any discovered tools not already in local set
+        const localNames = new Set(MCP_TOOLS.map((t) => t.name));
+        const externalOnly = discoveredTools.filter(
+          (t) => !localNames.has(t.name),
+        );
+        const allTools = [...MCP_TOOLS, ...externalOnly];
         res.json({
           jsonrpc: "2.0",
           id,
-          result: { tools: MCP_TOOLS },
+          result: { tools: allTools },
         });
         break;
+      }
 
       case "tools/call": {
         const params = body.params as
@@ -249,38 +264,94 @@ export function createServer(agent: OrchestratorAgent, port: number): Server {
           return;
         }
 
-        // Route to local tool execution
+        // Route to local tool execution first, then try external MCP providers
         const router = agent.getLocalRouter();
-        if (!router) {
-          res.json({
-            jsonrpc: "2.0",
-            id,
-            error: { code: -32603, message: "Tool router not available" },
-          });
-          return;
-        }
 
-        try {
-          const result = await router.call(toolName, args);
-          if (result.error) {
-            res.json({ jsonrpc: "2.0", id, error: result.error });
-          } else {
+        // Check if tool exists locally
+        if (router && router.listTools().includes(toolName)) {
+          try {
+            const result = await router.call(toolName, args);
+            if (result.error) {
+              res.json({ jsonrpc: "2.0", id, error: result.error });
+            } else {
+              res.json({
+                jsonrpc: "2.0",
+                id,
+                result: {
+                  content: [
+                    { type: "text", text: JSON.stringify(result.result) },
+                  ],
+                },
+              });
+            }
+          } catch (error) {
             res.json({
               jsonrpc: "2.0",
               id,
-              result: {
-                content: [
-                  { type: "text", text: JSON.stringify(result.result) },
-                ],
+              error: { code: -32000, message: String(error) },
+            });
+          }
+        } else {
+          // Tool not local — look up in catalog and proxy to external provider
+          const catalog = agent.getCatalog();
+          const tool = catalog.tools.find((t) => t.name === toolName);
+          if (!tool?.providerEndpoint) {
+            res.json({
+              jsonrpc: "2.0",
+              id,
+              error: { code: -32601, message: `Unknown tool: ${toolName}` },
+            });
+            return;
+          }
+
+          // Proxy the tools/call to the external MCP provider
+          try {
+            const proxyRes = await fetch(tool.providerEndpoint, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                jsonrpc: "2.0",
+                id: 1,
+                method: "tools/call",
+                params: { name: toolName, arguments: args },
+              }),
+              signal: AbortSignal.timeout(15000),
+            });
+
+            if (!proxyRes.ok) {
+              res.json({
+                jsonrpc: "2.0",
+                id,
+                error: {
+                  code: -32000,
+                  message: `Provider returned HTTP ${proxyRes.status}`,
+                },
+              });
+              return;
+            }
+
+            const proxyData = (await proxyRes.json()) as {
+              error?: unknown;
+              result?: unknown;
+            };
+            // Forward the response directly
+            res.json({
+              jsonrpc: "2.0",
+              id,
+              ...(proxyData.error
+                ? { error: proxyData.error }
+                : { result: proxyData.result }),
+            });
+          } catch (error) {
+            res.json({
+              jsonrpc: "2.0",
+              id,
+              error: {
+                code: -32000,
+                message: `Provider unreachable: ${String(error)}`,
               },
             });
           }
-        } catch (error) {
-          res.json({
-            jsonrpc: "2.0",
-            id,
-            error: { code: -32000, message: String(error) },
-          });
         }
         break;
       }
