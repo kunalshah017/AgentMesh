@@ -1,5 +1,6 @@
 import type { ConnectionStatus } from "@/hooks/useOrchestrator";
 import Link from "next/link";
+import { LogoIcon } from "./Logo";
 
 interface HeaderProps {
   status: ConnectionStatus;
@@ -12,7 +13,8 @@ export function Header({ status, eventCount }: HeaderProps) {
       {/* Logo */}
       <div className="flex items-center gap-4">
         <Link href="/">
-          <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1 cursor-pointer">
+          <div className="bg-neo-accent border-4 border-black px-3 py-1.5 shadow-[4px_4px_0px_0px_#000] -rotate-1 cursor-pointer flex items-center gap-2">
+            <LogoIcon size={24} className="text-black" />
             <h1 className="text-2xl font-black tracking-tighter uppercase text-black">
               AGENT<span className="text-neo-white">MESH</span>
             </h1>

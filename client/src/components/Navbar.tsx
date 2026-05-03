@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAccount, useConnect } from "wagmi";
 import { WalletDropdown } from "./WalletDropdown";
+import { LogoIcon } from "./Logo";
 
 interface NavbarProps {
     /** Optional status indicator for dashboard */
@@ -33,7 +34,8 @@ export function Navbar({ status, eventCount }: NavbarProps) {
             {/* Left: Logo + Links */}
             <div className="flex items-center gap-4">
                 <Link href="/">
-                    <div className="bg-neo-accent border-4 border-black px-4 py-1 shadow-[4px_4px_0px_0px_#000] -rotate-1 cursor-pointer">
+                    <div className="bg-neo-accent border-4 border-black px-3 py-1.5 shadow-[4px_4px_0px_0px_#000] -rotate-1 cursor-pointer flex items-center gap-2">
+                        <LogoIcon size={22} className="text-black" />
                         <h1 className="text-xl font-black tracking-tighter uppercase text-black">
                             AGENT<span className="text-neo-white">MESH</span>
                         </h1>
