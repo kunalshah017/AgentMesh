@@ -86,9 +86,14 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       fy: 0,
     });
 
+    const provCount = catalog.providers.length || 1;
     catalog.providers.forEach((prov, pi) => {
       const pColor = PROVIDER_COLORS[pi % PROVIDER_COLORS.length];
       const provId = `prov:${prov.ensName}`;
+
+      // Pre-position providers in a circle around the orchestrator
+      const provAngle = (2 * Math.PI * pi) / provCount - Math.PI / 2;
+      const provRadius = 350;
 
       nodes.push({
         id: provId,
@@ -98,14 +103,20 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
         group: prov.ensName,
         nodeType: "provider",
         toolCount: prov.tools.length,
+        x: Math.cos(provAngle) * provRadius,
+        y: Math.sin(provAngle) * provRadius,
       });
 
       // Orchestrator → Provider
       links.push({ source: "__orchestrator__", target: provId });
 
-      // Tools
-      prov.tools.forEach((tool) => {
+      // Tools — pre-position in a fan around their provider
+      const toolCount = prov.tools.length || 1;
+      prov.tools.forEach((tool, ti) => {
         const toolId = `tool:${tool.name}`;
+        const spread = Math.PI * 0.8; // fan spread angle
+        const toolAngle = provAngle - spread / 2 + (spread * ti) / Math.max(toolCount - 1, 1);
+        const toolRadius = provRadius + 150;
         nodes.push({
           id: toolId,
           label: shortLabel(tool.name),
@@ -113,6 +124,8 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
           color: pColor,
           group: prov.ensName,
           nodeType: "tool",
+          x: Math.cos(toolAngle) * toolRadius,
+          y: Math.sin(toolAngle) * toolRadius,
         });
         links.push({ source: provId, target: toolId, toolName: tool.name });
       });
@@ -122,9 +135,13 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
   }, [catalog.providers]);
 
   /* ── configure forces & fit to view ─────────────────────────── */
-  useEffect(() => {
+  const forcesConfigured = useRef(false);
+
+  // Configure forces as soon as the graph ref is available
+  const configureForces = useCallback(() => {
     const fg = fgRef.current;
-    if (!fg || graphData.nodes.length === 0) return;
+    if (!fg || forcesConfigured.current) return;
+    forcesConfigured.current = true;
 
     // Strong repulsion so nodes push apart, not toward center
     fg.d3Force("charge")?.strength(-600).distanceMax(800);
@@ -133,8 +150,8 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     fg.d3Force("link")
       ?.distance((link: any) => {
         const src = typeof link.source === "object" ? link.source.id : link.source;
-        if (src === "__orchestrator__") return 350; // providers orbit far from center
-        return 150; // tools orbit their provider
+        if (src === "__orchestrator__") return 350;
+        return 150;
       })
       .strength((link: any) => {
         const src = typeof link.source === "object" ? link.source.id : link.source;
@@ -142,17 +159,22 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
         return 0.6;
       });
 
-    // Remove center force entirely — orchestrator is already pinned,
-    // and center force pulls all other nodes inward
+    // Remove center force — orchestrator is already pinned
     fg.d3Force("center", null);
+  }, []);
 
-    // Reheat so new forces apply
-    fg.d3ReheatSimulation();
+  useEffect(() => {
+    if (!fgRef.current || graphData.nodes.length === 0) return;
 
-    // Fit to view with generous padding (avoids over-zoom)
-    const t = setTimeout(() => fg.zoomToFit(400, 80), 800);
+    // Reset flag when graph data changes so forces get re-applied
+    forcesConfigured.current = false;
+    configureForces();
+    fgRef.current.d3ReheatSimulation();
+
+    // Fit to view with generous padding
+    const t = setTimeout(() => fgRef.current?.zoomToFit(400, 80), 800);
     return () => clearTimeout(t);
-  }, [graphData]);
+  }, [graphData, configureForces]);
 
   /* ── custom node painting ────────────────────────────────────── */
   const paintNode = useCallback(
@@ -376,6 +398,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
             cooldownTicks={200}
             d3AlphaDecay={0.02}
             d3VelocityDecay={0.3}
+            onEngineTick={configureForces}
             // Disable zoom scroll to avoid conflict with page scroll
             enableZoomInteraction={true}
             enablePanInteraction={true}
