@@ -4,7 +4,14 @@
 // On first access per wallet, rehydrates from 0G using deterministic keys.
 
 import { v4 as uuid } from "uuid";
-import { batchUploadToStorage, downloadFromStorage } from "@agentmesh/shared";
+import {
+  batchUploadToStorage,
+  downloadFromStorage,
+  downloadBlobAsKvPairs,
+  scanRecentRootHashes,
+  setChatRootHashOnChain,
+  getChatRootHashFromChain,
+} from "@agentmesh/shared";
 
 export interface ChatMessage {
   id: string;
@@ -54,6 +61,9 @@ class ChatStore {
     return `agentmesh/chats/${walletAddress.toLowerCase()}/${chatId}`;
   }
 
+  // Track the latest rootHash for each wallet (from writes)
+  private latestRootHash = new Map<string, string>();
+
   /** Load a wallet's chats from 0G Storage (called on first access) */
   async loadWalletChats(walletAddress: string): Promise<void> {
     const addr = walletAddress.toLowerCase();
@@ -66,50 +76,58 @@ class ChatStore {
     }
 
     const loadPromise = (async () => {
+      // Strategy 1: Try KV node (fast if working)
+      let loaded = false;
       try {
         const indexData = await downloadFromStorage(this.indexKey(addr));
         if (
           indexData.type === "agentmesh-chat-index" &&
           Array.isArray(indexData.chats)
         ) {
-          const chatEntries = indexData.chats as Array<{
-            id: string;
-            title: string;
-            createdAt: number;
-            updatedAt: number;
-            messageCount: number;
-          }>;
-
-          // Load each chat's full data
-          for (const entry of chatEntries) {
-            try {
-              const chatData = await downloadFromStorage(
-                this.chatKey(addr, entry.id),
-              );
-              if (chatData.type === "agentmesh-chat" && chatData.chatId) {
-                const chat: Chat = {
-                  id: chatData.chatId as string,
-                  walletAddress: addr,
-                  title: chatData.title as string,
-                  messages: (chatData.messages as ChatMessage[]) ?? [],
-                  createdAt: chatData.createdAt as number,
-                  updatedAt: chatData.updatedAt as number,
-                  storageHash: this.chatKey(addr, entry.id),
-                };
-                this.getUserChats(addr).set(chat.id, chat);
-              }
-            } catch {
-              // Individual chat load failed — skip it
-            }
-          }
-          console.log(
-            `  📦 [0G] Loaded ${chatEntries.length} chats for ${addr.slice(0, 10)}...`,
-          );
+          await this.loadFromIndex(addr, indexData);
+          loaded = true;
         }
-      } catch (err) {
-        // No index found — first time user or 0G unavailable
+      } catch {
+        // KV node unavailable — try rootHash fallback
+      }
+
+      // Strategy 2: Read rootHash from on-chain registry (survives restarts)
+      if (!loaded) {
+        let rootHash = this.latestRootHash.get(addr);
+        if (!rootHash) {
+          rootHash = (await getChatRootHashFromChain(addr)) ?? undefined;
+          if (rootHash) this.latestRootHash.set(addr, rootHash);
+        }
+        if (rootHash) {
+          try {
+            const pairs = await downloadBlobAsKvPairs(rootHash);
+            this.loadFromKvPairs(addr, pairs);
+            loaded = true;
+          } catch {
+            // rootHash download failed
+          }
+        }
+      }
+
+      // Strategy 3: Scan recent storage txs for this wallet's data (slow, last resort)
+      if (!loaded) {
+        try {
+          const prefix = `agentmesh/chats/${addr}`;
+          const rootHashes = await scanRecentRootHashes(prefix, 20);
+          if (rootHashes.length > 0) {
+            const pairs = await downloadBlobAsKvPairs(rootHashes[0]);
+            this.loadFromKvPairs(addr, pairs);
+            this.latestRootHash.set(addr, rootHashes[0]);
+            loaded = true;
+          }
+        } catch {
+          // Scan failed
+        }
+      }
+
+      if (!loaded) {
         console.log(
-          `  📦 [0G] No chat index found for ${addr.slice(0, 10)}... (${err instanceof Error ? err.message : "unavailable"})`,
+          `  📦 [0G] No chat history found for ${addr.slice(0, 10)}... (new user or KV node not synced)`,
         );
       }
       this.loadedWallets.add(addr);
@@ -120,45 +138,125 @@ class ChatStore {
     this.loadingWallets.delete(addr);
   }
 
-  /** Persist chat data + index in a single 0G transaction (non-blocking) */
+  /** Load chats from index data (used by KV node path) */
+  private async loadFromIndex(
+    addr: string,
+    indexData: Record<string, unknown>,
+  ): Promise<void> {
+    const chatEntries = indexData.chats as Array<{
+      id: string;
+      title: string;
+      createdAt: number;
+      updatedAt: number;
+      messageCount: number;
+    }>;
+
+    for (const entry of chatEntries) {
+      try {
+        const chatData = await downloadFromStorage(
+          this.chatKey(addr, entry.id),
+        );
+        if (chatData.type === "agentmesh-chat" && chatData.chatId) {
+          const chat: Chat = {
+            id: chatData.chatId as string,
+            walletAddress: addr,
+            title: chatData.title as string,
+            messages: (chatData.messages as ChatMessage[]) ?? [],
+            createdAt: chatData.createdAt as number,
+            updatedAt: chatData.updatedAt as number,
+            storageHash: this.chatKey(addr, entry.id),
+          };
+          this.getUserChats(addr).set(chat.id, chat);
+        }
+      } catch {
+        // Individual chat load failed — skip
+      }
+    }
+    console.log(
+      `  📦 [0G] Loaded ${chatEntries.length} chats for ${addr.slice(0, 10)}...`,
+    );
+  }
+
+  /** Load chats from raw KV pairs (used by rootHash download path) */
+  private loadFromKvPairs(
+    addr: string,
+    pairs: Map<string, Record<string, unknown>>,
+  ): void {
+    let count = 0;
+    for (const [key, data] of pairs) {
+      if (data.type === "agentmesh-chat" && data.chatId && key.includes(addr)) {
+        const chat: Chat = {
+          id: data.chatId as string,
+          walletAddress: addr,
+          title: data.title as string,
+          messages: (data.messages as ChatMessage[]) ?? [],
+          createdAt: data.createdAt as number,
+          updatedAt: data.updatedAt as number,
+          storageHash: key,
+        };
+        this.getUserChats(addr).set(chat.id, chat);
+        count++;
+      }
+    }
+    if (count > 0) {
+      console.log(
+        `  📦 [0G] Loaded ${count} chats from storage for ${addr.slice(0, 10)}...`,
+      );
+    }
+  }
+
+  /** Persist ALL chats + index in a single 0G transaction (non-blocking) */
   private persistChatAndIndex(chat: Chat): void {
     const addr = chat.walletAddress.toLowerCase();
-    const chatData = {
-      type: "agentmesh-chat",
-      version: "1.0",
-      chatId: chat.id,
-      walletAddress: addr,
-      title: chat.title,
-      messages: chat.messages,
-      createdAt: chat.createdAt,
-      updatedAt: chat.updatedAt,
-    };
-
     const userChats = this.getUserChats(addr);
-    const indexData = {
-      type: "agentmesh-chat-index",
-      version: "1.0",
-      walletAddress: addr,
-      chats: Array.from(userChats.values()).map((c) => ({
-        id: c.id,
-        title: c.title,
-        createdAt: c.createdAt,
-        updatedAt: c.updatedAt,
-        messageCount: c.messages.length,
-        storageHash: c.storageHash,
-      })),
-      updatedAt: Date.now(),
-    };
 
-    const chatKey = this.chatKey(addr, chat.id);
-    const indexKey = this.indexKey(addr);
+    // Build entries for ALL chats (so the latest blob is a full snapshot)
+    const entries: Array<{ key: string; data: Record<string, unknown> }> = [];
 
-    batchUploadToStorage([
-      { key: chatKey, data: chatData as Record<string, unknown> },
-      { key: indexKey, data: indexData as Record<string, unknown> },
-    ])
+    for (const c of userChats.values()) {
+      entries.push({
+        key: this.chatKey(addr, c.id),
+        data: {
+          type: "agentmesh-chat",
+          version: "1.0",
+          chatId: c.id,
+          walletAddress: addr,
+          title: c.title,
+          messages: c.messages,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+        } as Record<string, unknown>,
+      });
+    }
+
+    // Append index as the last entry
+    entries.push({
+      key: this.indexKey(addr),
+      data: {
+        type: "agentmesh-chat-index",
+        version: "1.0",
+        walletAddress: addr,
+        chats: Array.from(userChats.values()).map((c) => ({
+          id: c.id,
+          title: c.title,
+          createdAt: c.createdAt,
+          updatedAt: c.updatedAt,
+          messageCount: c.messages.length,
+          storageHash: c.storageHash,
+        })),
+        updatedAt: Date.now(),
+      } as Record<string, unknown>,
+    });
+
+    batchUploadToStorage(entries)
       .then(([chatHash]) => {
-        if (chatHash) chat.storageHash = chatHash;
+        if (chatHash) {
+          chat.storageHash = chatHash;
+          // Track the latest rootHash for this wallet (enables rehydration)
+          this.latestRootHash.set(addr, chatHash);
+          // Store on-chain so it survives server restarts (fire-and-forget)
+          setChatRootHashOnChain(chatHash).catch(() => {});
+        }
         console.log(
           `  📦 [0G] Chat ${chat.id.slice(0, 8)} + index persisted (1 tx)`,
         );
@@ -219,7 +317,7 @@ class ChatStore {
     chat.messages.push(message);
     chat.updatedAt = Date.now();
 
-    // Debounce: only persist after 2s of no new messages
+    // Debounce: only persist after 5s of no new messages (batches user + assistant msgs)
     const timerKey = `${walletAddress}/${chatId}`;
     const existing = this.persistTimers.get(timerKey);
     if (existing) clearTimeout(existing);
@@ -228,7 +326,7 @@ class ChatStore {
       setTimeout(() => {
         this.persistTimers.delete(timerKey);
         this.persistChatAndIndex(chat);
-      }, 2000),
+      }, 5000),
     );
 
     return message;
