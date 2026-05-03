@@ -74,7 +74,7 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     const nodes: GraphNode[] = [];
     const links: GraphLink[] = [];
 
-    // Orchestrator hub
+    // Orchestrator hub — fixed at center
     nodes.push({
       id: "__orchestrator__",
       label: "ORCHESTRATOR",
@@ -82,6 +82,8 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
       color: ORCHESTRATOR_COLOR,
       group: "__orchestrator__",
       nodeType: "orchestrator",
+      fx: 0,
+      fy: 0,
     });
 
     catalog.providers.forEach((prov, pi) => {
@@ -119,11 +121,35 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     return { nodes, links };
   }, [catalog.providers]);
 
-  /* ── fit to view after data loads ────────────────────────────── */
+  /* ── configure forces & fit to view ─────────────────────────── */
   useEffect(() => {
     const fg = fgRef.current;
     if (!fg || graphData.nodes.length === 0) return;
-    const t = setTimeout(() => fg.zoomToFit(400, 40), 500);
+
+    // Strong repulsion so nodes don't overlap
+    fg.d3Force("charge")?.strength(-400).distanceMax(500);
+
+    // Different link distances: orchestrator→provider = long, provider→tool = shorter
+    fg.d3Force("link")
+      ?.distance((link: any) => {
+        const src = typeof link.source === "object" ? link.source.id : link.source;
+        if (src === "__orchestrator__") return 200; // providers orbit far from center
+        return 120; // tools orbit closer to their provider
+      })
+      .strength((link: any) => {
+        const src = typeof link.source === "object" ? link.source.id : link.source;
+        if (src === "__orchestrator__") return 0.5;
+        return 0.7;
+      });
+
+    // Weaken center force so the radial layout stays spread
+    fg.d3Force("center")?.strength(0.02);
+
+    // Reheat so new forces apply
+    fg.d3ReheatSimulation();
+
+    // Fit to view with generous padding (avoids over-zoom)
+    const t = setTimeout(() => fg.zoomToFit(400, 80), 800);
     return () => clearTimeout(t);
   }, [graphData]);
 
@@ -346,7 +372,8 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
             onNodeDragEnd={onNodeDragEnd}
             onNodeClick={onNodeClick}
             // Simulation
-            cooldownTicks={100}
+            cooldownTicks={200}
+            d3AlphaDecay={0.02}
             d3VelocityDecay={0.3}
             // Disable zoom scroll to avoid conflict with page scroll
             enableZoomInteraction={true}
