@@ -3,7 +3,7 @@ import { ethers } from "hardhat";
 async function main() {
   const registry = await ethers.getContractAt(
     "AgentRegistry",
-    "0x0B05236c972DbFCe91519a183980F0D5fFd9da28",
+    "0x617eDCC3068774492a20E2B5d23f155e0CCA73Db",
   );
   const count = await registry.getAgentCount();
   console.log("Provider count:", count.toString());

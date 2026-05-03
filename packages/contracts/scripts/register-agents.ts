@@ -4,7 +4,7 @@
 import { ethers } from "hardhat";
 
 // Will be updated after deployment
-const AGENT_REGISTRY = "0x0B05236c972DbFCe91519a183980F0D5fFd9da28";
+const AGENT_REGISTRY = "0x617eDCC3068774492a20E2B5d23f155e0CCA73Db";
 
 const PROVIDERS = [
   {
@@ -48,7 +48,10 @@ async function main() {
       if (error.message?.includes("already registered")) {
         console.log(`⏭️  ${provider.ensName} already registered`);
       } else {
-        console.error(`❌ Failed to register ${provider.ensName}:`, error.message);
+        console.error(
+          `❌ Failed to register ${provider.ensName}:`,
+          error.message,
+        );
       }
     }
   }

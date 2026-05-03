@@ -22,10 +22,14 @@ contract AgentRegistry {
     mapping(bytes32 => Agent) public agents; // keccak256(ensName) => Agent
     bytes32[] public agentIds;
 
+    // Chat storage: wallet => latest 0G rootHash for chat data
+    mapping(address => string) public chatRootHash;
+
     event AgentRegistered(bytes32 indexed id, string ensName, address owner, string endpoint);
     event AgentUpdated(bytes32 indexed id, string ensName);
     event AgentDeactivated(bytes32 indexed id, string ensName);
     event AgentReactivated(bytes32 indexed id, string ensName);
+    event ChatRootHashUpdated(address indexed wallet, string rootHash);
 
     modifier onlyAgentOwner(bytes32 id) {
         require(agents[id].owner == msg.sender, "Not agent owner");
@@ -133,5 +137,23 @@ contract AgentRegistry {
      */
     function getAllAgentIds() external view returns (bytes32[] memory) {
         return agentIds;
+    }
+
+    // ─── Chat Storage Pointer ────────────────────────────────────────────
+
+    /**
+     * @notice Store the latest 0G rootHash for the caller's chat data.
+     * @param rootHash The 0G storage root hash (e.g. "0xabc123...")
+     */
+    function setChatRootHash(string calldata rootHash) external {
+        chatRootHash[msg.sender] = rootHash;
+        emit ChatRootHashUpdated(msg.sender, rootHash);
+    }
+
+    /**
+     * @notice Get the latest chat rootHash for a wallet.
+     */
+    function getChatRootHash(address wallet) external view returns (string memory) {
+        return chatRootHash[wallet];
     }
 }
