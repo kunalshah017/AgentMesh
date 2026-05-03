@@ -4,6 +4,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { Navbar } from "@/components/Navbar";
 import { StickerLayer } from "@/components/StickerLayer";
+import { ArchitectureDiagram } from "@/components/ArchitectureDiagram";
 
 const ShapeGrid = dynamic(() => import("@/components/ShapeGrid"), { ssr: false });
 
@@ -26,11 +27,11 @@ const CATEGORY_COLORS: Record<string, string> = {
 };
 
 const SPONSORS = [
-  { name: "0G", layers: "Compute + Storage + Chain", what: "LLM inference, KV storage, smart contracts", color: "bg-black text-white" },
-  { name: "Gensyn AXL", layers: "P2P Mesh", what: "Encrypted agent communication, MCP routing", color: "bg-green-600 text-white" },
-  { name: "Uniswap", layers: "Trading API", what: "Real-time swap quotes, pay-with-any-token", color: "bg-pink-500 text-white" },
-  { name: "KeeperHub", layers: "MCP Execution", what: "DeFi workflows, reputation on 0G Chain", color: "bg-blue-600 text-white" },
-  { name: "ENS", layers: "Identity", what: "Agent discovery by capability", color: "bg-sky-400 text-black" },
+  { name: "0G", logo: "/sponsors/0g.png", layers: "Compute + Storage + Chain", what: "LLM inference, KV storage, smart contracts", color: "bg-black text-white" },
+  { name: "Gensyn AXL", logo: "/sponsors/gensyn.png", layers: "P2P Mesh", what: "Encrypted agent communication, MCP routing", color: "bg-green-600 text-white" },
+  { name: "Uniswap", logo: "/sponsors/uniswap.png", layers: "Trading API", what: "Real-time swap quotes, pay-with-any-token", color: "bg-pink-500 text-white" },
+  { name: "KeeperHub", logo: "/sponsors/keeperhub.png", layers: "MCP Execution", what: "DeFi workflows, reputation on 0G Chain", color: "bg-blue-600 text-white" },
+  { name: "ENS", logo: "/sponsors/ens.png", layers: "Identity", what: "Agent discovery by capability", color: "bg-sky-400 text-black" },
 ];
 
 const STATS = [
@@ -231,6 +232,15 @@ export default function Home() {
               <p className="text-sm">Pure MCP functions: DeFi research, swaps, gas prediction, risk analysis. Fast, cheap, anyone can deploy.</p>
             </div>
           </div>
+
+          {/* Interactive Architecture Diagram */}
+          <div className="mt-10">
+            <h4 className="text-xl font-black uppercase mb-2">System Architecture <span className="text-xs font-bold opacity-50 normal-case ml-2">hover nodes or click flows</span></h4>
+            <p className="text-xs opacity-60 mb-4">Client → Server → Orchestrator → Tools. Messages persisted on 0G KV. Payments settled on-chain.</p>
+            <div className="border-4 border-black bg-neo-white p-6 shadow-[5px_5px_0px_0px_#000]">
+              <ArchitectureDiagram />
+            </div>
+          </div>
         </div>
       </section>
 
@@ -309,7 +319,15 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {SPONSORS.map((s) => (
               <div key={s.name} className={`border-4 border-black p-4 shadow-[4px_4px_0px_0px_#000] ${s.color}`}>
-                <div className="font-black text-lg uppercase">{s.name}</div>
+                <div className="flex items-center gap-3 mb-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={s.logo}
+                    alt={`${s.name} logo`}
+                    className={`h-8 w-auto ${s.color.includes("text-white") ? "invert" : ""}`}
+                  />
+                  <span className="font-black text-lg uppercase">{s.name}</span>
+                </div>
                 <div className="text-xs font-bold uppercase opacity-70 mt-1">{s.layers}</div>
                 <div className="text-sm mt-2 opacity-90">{s.what}</div>
               </div>

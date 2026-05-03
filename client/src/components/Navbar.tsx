@@ -30,7 +30,7 @@ export function Navbar({ status, eventCount }: NavbarProps) {
     ];
 
     return (
-        <nav className="border-b-4 border-black bg-neo-white px-6 py-4 flex items-center justify-between">
+        <nav className="sticky top-0 z-40 border-b-4 border-black bg-neo-white px-6 py-4 flex items-center justify-between">
             {/* Left: Logo + Links */}
             <div className="flex items-center gap-4">
                 <Link href="/">
