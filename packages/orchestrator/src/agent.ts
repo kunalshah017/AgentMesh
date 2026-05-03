@@ -59,6 +59,35 @@ export type PaymentApprovalCallback = (
   request: PaymentApprovalRequest,
 ) => Promise<PaymentApprovalResponse>;
 
+export interface TransactionRequest {
+  toolName: string;
+  description: string;
+  transaction: {
+    to: string;
+    data: string;
+    value: string;
+    chainId: number;
+  };
+  quote: {
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: string;
+    amountOut: string;
+    route: string;
+    gasEstimate?: string;
+    priceImpact?: string;
+  };
+}
+
+export interface TransactionApprovalResponse {
+  approved: boolean;
+  txHash?: string;
+}
+
+export type TransactionApprovalCallback = (
+  request: TransactionRequest,
+) => Promise<TransactionApprovalResponse>;
+
 export class OrchestratorAgent {
   private llm: OpenAI;
   private config: OrchestratorConfig;
@@ -67,6 +96,7 @@ export class OrchestratorAgent {
   private eventListeners: ((event: AgentEvent) => void)[] = [];
   private localRouter?: LocalToolRouter;
   private paymentApprovalCallback?: PaymentApprovalCallback;
+  private transactionApprovalCallback?: TransactionApprovalCallback;
   private payerAddress?: string;
 
   constructor(config: OrchestratorConfig) {
@@ -200,6 +230,13 @@ export class OrchestratorAgent {
   ): void {
     this.paymentApprovalCallback = cb;
     this.payerAddress = payerAddress;
+  }
+
+  /**
+   * Set a callback for requesting user transaction approval (e.g. swap execution).
+   */
+  setTransactionApproval(cb: TransactionApprovalCallback | undefined): void {
+    this.transactionApprovalCallback = cb;
   }
 
   private emit(event: AgentEvent): void {
@@ -340,7 +377,10 @@ export class OrchestratorAgent {
 
       task.status = "completed";
       task.completedAt = Date.now();
-      this.emit({ type: "task_completed", taskId: task.id, result: task });
+
+      // Summarize results via LLM for natural language response
+      const summary = await this.summarizeResults(task);
+      this.emit({ type: "task_completed", taskId: task.id, result: summary });
 
       // Store conversation log to 0G Storage (non-blocking)
       storeConversationLog(
@@ -540,6 +580,59 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
   }
 
   /**
+   * Summarize tool results into a natural language response via LLM.
+   */
+  private async summarizeResults(task: Task): Promise<string> {
+    const results = task.subtasks
+      .filter((s) => s.status === "completed" && s.result)
+      .map(
+        (s) =>
+          `Tool: ${s.assignedTool}\nTask: ${s.description}\nResult: ${JSON.stringify(s.result)}`,
+      );
+
+    if (results.length === 0) {
+      const failed = task.subtasks.filter((s) => s.status === "failed");
+      if (failed.length > 0) {
+        return `Failed to complete: ${failed.map((f) => (f.result ? ((f.result as { error?: string }).error ?? f.description) : f.description)).join(", ")}`;
+      }
+      return "No results.";
+    }
+
+    try {
+      const response = await this.llm.chat.completions.create({
+        model: ZERO_G.computeModel,
+        messages: [
+          {
+            role: "system",
+            content: `You are AgentMesh, a DeFi agent orchestrator. Format your response as rich markdown.
+
+FORMATTING RULES:
+- Use **bold** for key values (token names, amounts, addresses)
+- Use markdown tables (| col | col |) for structured data like balances, yields, protocol stats
+- Use bullet points for lists or multiple findings
+- Use \`code\` for addresses, tx hashes, contract names
+- Use > blockquotes for important warnings or notes
+- Add a brief 1-line summary at the top before detailed data
+- Format large numbers with commas and appropriate units (e.g. $1,234.56)
+- If data is empty or zero, say so clearly and suggest next steps
+- NEVER include raw JSON in your response
+- Keep it concise — no filler text`,
+          },
+          {
+            role: "user",
+            content: `User goal: ${task.goal}\n\n${results.join("\n\n")}`,
+          },
+        ],
+        temperature: 0.3,
+      });
+      return response.choices[0]?.message?.content ?? results.join("\n");
+    } catch {
+      // LLM unavailable — fall back to formatted raw results
+      return results.join("\n\n");
+    }
+  }
+
+  /**
    * Call a tool provider via AXL MCP or local router.
    * Handles x402 payment flow: if 402 received, sign payment and retry.
    */
@@ -668,10 +761,68 @@ Respond with ONLY a JSON array, no markdown, no explanation: [{"description": ".
 
         const response = await this.localRouter.call(toolName, {
           task: subtask.description,
+          address: this.payerAddress ?? this.config.walletAddress ?? "",
         });
         if (response.error) {
           throw new Error(response.error.message);
         }
+
+        // Check if the result includes transaction calldata (e.g. swap)
+        const result = response.result as Record<string, unknown> | undefined;
+        if (result?.transaction && this.transactionApprovalCallback) {
+          const tx = result.transaction as {
+            to: string;
+            data: string;
+            value: string;
+            chainId: number;
+          };
+          this.emit({
+            type: "transaction_request",
+            toolName,
+            description: subtask.description,
+            transaction: tx,
+            quote: {
+              tokenIn: (result.tokenIn as string) ?? "",
+              tokenOut: (result.tokenOut as string) ?? "",
+              amountIn: (result.amountIn as string) ?? "",
+              amountOut: (result.amountOut as string) ?? "",
+              route: (result.route as string) ?? "",
+              gasEstimate: result.gasEstimate as string | undefined,
+              priceImpact: result.priceImpact as string | undefined,
+            },
+          } as unknown as AgentEvent);
+
+          const txApproval = await this.transactionApprovalCallback({
+            toolName,
+            description: subtask.description,
+            transaction: tx,
+            quote: {
+              tokenIn: (result.tokenIn as string) ?? "",
+              tokenOut: (result.tokenOut as string) ?? "",
+              amountIn: (result.amountIn as string) ?? "",
+              amountOut: (result.amountOut as string) ?? "",
+              route: (result.route as string) ?? "",
+              gasEstimate: result.gasEstimate as string | undefined,
+              priceImpact: result.priceImpact as string | undefined,
+            },
+          });
+
+          if (txApproval.approved && txApproval.txHash) {
+            return {
+              ...result,
+              status: "success",
+              txHash: txApproval.txHash,
+            };
+          } else {
+            return {
+              ...result,
+              status: "failed",
+              txHash: undefined,
+              error: "Transaction rejected by user",
+            };
+          }
+        }
+
         return response.result;
       }
     }
