@@ -132,21 +132,23 @@ export class OrchestratorAgent {
 
   /**
    * Refresh tool registry from on-chain AgentRegistry + ENS text records.
-   * Then discover individual tools from external providers via tools/list.
-   * Priority: 1) On-chain registry (0G Chain), 2) ENS resolution (Sepolia), 3) Local fallback.
+   * Refresh tool registry — discovers new third-party MCP providers from
+   * on-chain AgentRegistry and ENS.  Builtin providers (agent-mesh.eth) are
+   * already registered at startup, so we skip them here.
    */
   async refreshRegistry(): Promise<void> {
     const existingNames = new Set(this.toolRegistry.map((t) => t.ensName));
 
-    // 1. On-chain AgentRegistry (source of truth for active tools)
+    // 1. On-chain AgentRegistry — discover third-party providers only
     try {
       const onChainAgents = await discoverToolsFromRegistry();
       for (const agent of onChainAgents) {
-        if (!existingNames.has(agent.ensName)) {
-          this.toolRegistry.push(agent);
-          existingNames.add(agent.ensName);
-          this.emit({ type: "tool_discovered", tool: agent });
-        }
+        // Skip our own sub-agents (legacy entries) and already-known providers
+        if (agent.ensName.endsWith(".agent-mesh.eth")) continue;
+        if (existingNames.has(agent.ensName)) continue;
+        this.toolRegistry.push(agent);
+        existingNames.add(agent.ensName);
+        this.emit({ type: "tool_discovered", tool: agent });
       }
     } catch {
       // Non-critical — continue with ENS fallback
@@ -156,11 +158,11 @@ export class OrchestratorAgent {
     try {
       const ensAgents = await discoverAgentsFromENS();
       for (const agent of ensAgents) {
-        if (!existingNames.has(agent.ensName)) {
-          this.toolRegistry.push(agent);
-          existingNames.add(agent.ensName);
-          this.emit({ type: "tool_discovered", tool: agent });
-        }
+        if (agent.ensName.endsWith(".agent-mesh.eth")) continue;
+        if (existingNames.has(agent.ensName)) continue;
+        this.toolRegistry.push(agent);
+        existingNames.add(agent.ensName);
+        this.emit({ type: "tool_discovered", tool: agent });
       }
     } catch {
       // Non-critical — ENS resolution is optional enrichment
