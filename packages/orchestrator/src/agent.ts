@@ -297,11 +297,10 @@ export class OrchestratorAgent {
           }
           tool = tools[0];
         }
-        const resolvedToolName = this.resolveToolName(subtask);
         this.emit({
           type: "tool_called",
           tool: tool.ensName,
-          toolName: resolvedToolName,
+          toolName: subtask.assignedTool,
           method: subtask.description,
         });
 
@@ -468,16 +467,21 @@ export class OrchestratorAgent {
   private async planTaskWithLLM(goal: string): Promise<SubTask[]> {
     const toolSummary = this.toolCatalog.getToolSummaryForPlanner();
     const systemPrompt = `You are a task planner for a DeFi agent mesh. Break the user's goal into subtasks.
-Available tools:
+
+AVAILABLE TOOLS (use these EXACT names in your response):
 ${toolSummary}
 
 RULES:
 1. If the user asks about prices, tokens, protocols, yields, swaps, balances, risk, or ANY DeFi-related data — you MUST return a tool call. These are NOT conversational.
 2. ONLY return an empty array [] for pure greetings ("hi", "hello", "thanks") or questions about yourself ("who are you", "what can you do").
-3. "What's the price of X" → use token-info. "Show me yields" → use scan-yields. "How risky is X" → use risk-assess.
+3. The "tool" field MUST be one of the exact tool names listed above (e.g. "scan-yields", "token-info", "risk-assess"). NEVER invent tool names like "defi-research".
 
-Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]
-Use exact tool names from the list above. If unsure, use the closest match.`;
+Examples:
+- "What's the price of ETH?" → [{"description": "Get current ETH price and market data", "tool": "token-info"}]
+- "Show me yields for USDC" → [{"description": "Scan DeFi protocols for best USDC yield opportunities", "tool": "scan-yields"}]
+- "How risky is Aave?" → [{"description": "Assess risk profile of Aave protocol", "tool": "risk-assess"}]
+
+Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]`;
 
     const response = await this.llm.chat.completions.create({
       model: ZERO_G.computeModel,
@@ -499,24 +503,37 @@ Use exact tool names from the list above. If unsure, use the closest match.`;
         capability?: string;
         tool?: string;
       }>;
-      return parsed.map((item) => ({
-        id: uuid(),
-        parentId: "",
-        description: item.description ?? goal,
-        assignedTool: item.tool ?? item.capability ?? "defi-research",
-        status: "pending" as const,
-      }));
-    } catch {
-      // Fallback: single subtask
-      return [
-        {
+
+      // Valid tool names from the catalog
+      const validTools = new Set(this.toolCatalog.getAllTools().map((t) => t.name));
+
+      return parsed.map((item) => {
+        const rawTool = item.tool ?? item.capability ?? "";
+        // Use LLM's tool name if it matches a real tool, otherwise resolve via keywords
+        const subtask: SubTask = {
           id: uuid(),
           parentId: "",
-          description: goal,
-          assignedTool: "defi-research",
+          description: item.description ?? goal,
+          assignedTool: validTools.has(rawTool) ? rawTool : "",
           status: "pending" as const,
-        },
-      ];
+        };
+        // If LLM gave an invalid name, resolve from description keywords
+        if (!subtask.assignedTool) {
+          subtask.assignedTool = this.resolveToolName(subtask);
+        }
+        return subtask;
+      });
+    } catch {
+      // Fallback: single subtask, resolve from goal keywords
+      const subtask: SubTask = {
+        id: uuid(),
+        parentId: "",
+        description: goal,
+        assignedTool: "",
+        status: "pending" as const,
+      };
+      subtask.assignedTool = this.resolveToolName(subtask);
+      return [subtask];
     }
   }
 
