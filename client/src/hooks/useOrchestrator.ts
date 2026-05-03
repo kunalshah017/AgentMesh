@@ -23,6 +23,26 @@ export interface PaymentRequest {
   };
 }
 
+export interface TransactionRequest {
+  toolName: string;
+  description: string;
+  transaction: {
+    to: string;
+    data: string;
+    value: string;
+    chainId: number;
+  };
+  quote: {
+    tokenIn: string;
+    tokenOut: string;
+    amountIn: string;
+    amountOut: string;
+    route: string;
+    gasEstimate?: string;
+    priceImpact?: string;
+  };
+}
+
 export type ConnectionStatus = "disconnected" | "connecting" | "connected";
 
 interface UseOrchestratorReturn {
@@ -35,6 +55,9 @@ interface UseOrchestratorReturn {
   pendingPayment: PaymentRequest | null;
   approvePayment: (signature: string) => void;
   rejectPayment: () => void;
+  pendingTransaction: TransactionRequest | null;
+  approveTransaction: (txHash: string) => void;
+  rejectTransaction: () => void;
 }
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:3001";
@@ -60,6 +83,8 @@ export function useOrchestrator(
   const [pendingPayment, setPendingPayment] = useState<PaymentRequest | null>(
     null,
   );
+  const [pendingTransaction, setPendingTransaction] =
+    useState<TransactionRequest | null>(null);
   const walletRef = useRef(walletAddress);
   walletRef.current = walletAddress;
   const signMessageRef = useRef(signMessage);
@@ -160,8 +185,11 @@ export function useOrchestrator(
 
     setStatus("connecting");
     const ws = new WebSocket(WS_URL);
+    wsRef.current = ws;
 
     ws.onopen = () => {
+      // Ignore events from stale connections (StrictMode cleanup race)
+      if (wsRef.current !== ws) return;
       setStatus("connected");
       reconnectAttempts.current = 0;
       addEvent({ type: "system", message: "Connected to Orchestrator" });
@@ -173,6 +201,7 @@ export function useOrchestrator(
     };
 
     ws.onmessage = (msg) => {
+      if (wsRef.current !== ws) return;
       try {
         const event = JSON.parse(msg.data) as AgentEvent;
         if (event.type === "auth_success") {
@@ -184,6 +213,10 @@ export function useOrchestrator(
           // Pause for user approval
           setPendingPayment(event as unknown as PaymentRequest);
           addEvent(event);
+        } else if (event.type === "transaction_request") {
+          // Pause for user transaction approval (swap execution)
+          setPendingTransaction(event as unknown as TransactionRequest);
+          addEvent(event);
         } else {
           addEvent(event);
         }
@@ -193,6 +226,8 @@ export function useOrchestrator(
     };
 
     ws.onclose = () => {
+      // Only handle close for the current active connection
+      if (wsRef.current !== ws) return;
       setStatus("disconnected");
       setIsAuthenticated(false);
       wsRef.current = null;
@@ -205,8 +240,6 @@ export function useOrchestrator(
     ws.onerror = () => {
       ws.close();
     };
-
-    wsRef.current = ws;
   }, [addEvent, authenticateWs]);
 
   // Reconnect when wallet changes to re-auth
@@ -247,7 +280,10 @@ export function useOrchestrator(
     connect();
     return () => {
       clearTimeout(reconnectTimer.current);
-      wsRef.current?.close();
+      if (wsRef.current) {
+        wsRef.current.close();
+        wsRef.current = null;
+      }
     };
   }, [connect]);
 
@@ -336,6 +372,31 @@ export function useOrchestrator(
     setPendingPayment(null);
   }, []);
 
+  const approveTransaction = useCallback((txHash: string) => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "transaction_approval",
+          approved: true,
+          txHash,
+        }),
+      );
+    }
+    setPendingTransaction(null);
+  }, []);
+
+  const rejectTransaction = useCallback(() => {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(
+        JSON.stringify({
+          type: "transaction_approval",
+          approved: false,
+        }),
+      );
+    }
+    setPendingTransaction(null);
+  }, []);
+
   return {
     status,
     events,
@@ -346,5 +407,8 @@ export function useOrchestrator(
     pendingPayment,
     approvePayment,
     rejectPayment,
+    pendingTransaction,
+    approveTransaction,
+    rejectTransaction,
   };
 }

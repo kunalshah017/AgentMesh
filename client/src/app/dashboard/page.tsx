@@ -10,6 +10,7 @@ import { Navbar } from "@/components/Navbar";
 import { PaymentTicker } from "@/components/PaymentTicker";
 import { ToolRegistry } from "@/components/ToolRegistry";
 import { PaymentApproval } from "@/components/PaymentApproval";
+import { TransactionApproval } from "@/components/TransactionApproval";
 import { useOrchestrator } from "@/hooks/useOrchestrator";
 import { useChatHistory } from "@/hooks/useChatHistory";
 import { useAccount, useSwitchChain, useSignMessage, useDisconnect } from "wagmi";
@@ -34,7 +35,7 @@ export default function Dashboard() {
     const { disconnect } = useDisconnect();
     const walletAddress = mounted ? address : undefined;
     const wrongChain = mounted && !!address && chain?.id !== baseSepolia.id;
-    const { status, events, sendGoal, clearEvents, isAuthenticated, currentChatId, pendingPayment, approvePayment, rejectPayment } = useOrchestrator(
+    const { status, events, sendGoal, clearEvents, isAuthenticated, currentChatId, pendingPayment, approvePayment, rejectPayment, pendingTransaction, approveTransaction, rejectTransaction } = useOrchestrator(
         walletAddress,
         walletAddress ? ({ message }) => signMessageAsync({ message }) : undefined,
         disconnect,
@@ -124,6 +125,15 @@ export default function Dashboard() {
                     payment={pendingPayment}
                     onApprove={approvePayment}
                     onReject={rejectPayment}
+                />
+            )}
+
+            {/* Transaction approval modal (swap execution) */}
+            {pendingTransaction && (
+                <TransactionApproval
+                    transaction={pendingTransaction}
+                    onApprove={approveTransaction}
+                    onReject={rejectTransaction}
                 />
             )}
 
