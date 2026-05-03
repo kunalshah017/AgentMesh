@@ -126,24 +126,25 @@ export function NetworkGraph({ activeTools, toolActions }: NetworkGraphProps) {
     const fg = fgRef.current;
     if (!fg || graphData.nodes.length === 0) return;
 
-    // Strong repulsion so nodes don't overlap
-    fg.d3Force("charge")?.strength(-400).distanceMax(500);
+    // Strong repulsion so nodes push apart, not toward center
+    fg.d3Force("charge")?.strength(-600).distanceMax(800);
 
-    // Different link distances: orchestrator→provider = long, provider→tool = shorter
+    // Bigger gap: orchestrator→provider = 350px, provider→tool = 150px
     fg.d3Force("link")
       ?.distance((link: any) => {
         const src = typeof link.source === "object" ? link.source.id : link.source;
-        if (src === "__orchestrator__") return 200; // providers orbit far from center
-        return 120; // tools orbit closer to their provider
+        if (src === "__orchestrator__") return 350; // providers orbit far from center
+        return 150; // tools orbit their provider
       })
       .strength((link: any) => {
         const src = typeof link.source === "object" ? link.source.id : link.source;
-        if (src === "__orchestrator__") return 0.5;
-        return 0.7;
+        if (src === "__orchestrator__") return 0.4;
+        return 0.6;
       });
 
-    // Weaken center force so the radial layout stays spread
-    fg.d3Force("center")?.strength(0.02);
+    // Remove center force entirely — orchestrator is already pinned,
+    // and center force pulls all other nodes inward
+    fg.d3Force("center", null);
 
     // Reheat so new forces apply
     fg.d3ReheatSimulation();
