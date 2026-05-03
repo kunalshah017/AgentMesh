@@ -103,6 +103,8 @@ export class OrchestratorAgent {
       name: string;
       description: string;
       inputSchema?: Record<string, unknown>;
+      keywords?: string[];
+      example?: string;
     }>;
   }): void {
     this.toolCatalog.registerBuiltinProvider(provider);
@@ -477,27 +479,6 @@ RULES:
 3. The "tool" field MUST be one of the exact tool names listed above. NEVER invent names.
 4. When in doubt between conversational and tool call, ALWAYS choose the tool call.
 5. For multi-step goals, return multiple tool calls in order.
-
-TOOL SELECTION GUIDE:
-- Price, value, market cap, volume → "token-info"
-- Yields, APY, farming, best returns → "scan-yields"
-- Protocol info, TVL, stats, compare protocols → "protocol-stats"
-- Risk, safety, danger, rug pull → "risk-assess"
-- Audit, security, vulnerabilities, contract check → "contract-audit"
-- Swap, trade, exchange, buy, sell, quote → "execute-swap"
-- Deposit, stake, provide liquidity, add to pool → "execute-deposit"
-- Balance, portfolio, holdings, wallet, "show my", "what do I have" → "check-balance"
-- Pay, convert to USDC, auto-swap payment → "pay-with-any-token"
-
-EXAMPLES:
-- "What's the price of ETH?" → [{"description": "Get current ETH price and market data", "tool": "token-info"}]
-- "Show me yields for USDC" → [{"description": "Scan DeFi protocols for best USDC yield opportunities", "tool": "scan-yields"}]
-- "How risky is Aave?" → [{"description": "Assess risk profile of Aave protocol", "tool": "risk-assess"}]
-- "Show my portfolio" → [{"description": "Check wallet balances and holdings", "tool": "check-balance"}]
-- "Swap 1 ETH for USDC" → [{"description": "Get swap quote for 1 ETH to USDC via Uniswap", "tool": "execute-swap"}]
-- "Is Compound audited?" → [{"description": "Check smart contract audit status for Compound", "tool": "contract-audit"}]
-- "Compare Aave and Compound" → [{"description": "Get Aave protocol stats", "tool": "protocol-stats"}, {"description": "Get Compound protocol stats", "tool": "protocol-stats"}]
-- "Find yields and check risks for USDC" → [{"description": "Scan best yield opportunities for USDC", "tool": "scan-yields"}, {"description": "Assess risk of top yield protocols", "tool": "risk-assess"}]
 
 Respond with ONLY a JSON array, no markdown, no explanation: [{"description": "...", "tool": "exact-tool-name"}]`;
 

@@ -216,6 +216,8 @@ export class ToolCatalog {
       name: string;
       description: string;
       inputSchema?: Record<string, unknown>;
+      keywords?: string[];
+      example?: string;
     }>;
   }): void {
     const providerToolList: DiscoveredTool[] = provider.tools.map((t) => ({
@@ -224,6 +226,8 @@ export class ToolCatalog {
       inputSchema: t.inputSchema,
       providerName: provider.ensName,
       providerEndpoint: provider.endpoint,
+      keywords: t.keywords,
+      example: t.example,
     }));
 
     for (const tool of providerToolList) {
@@ -247,9 +251,35 @@ export class ToolCatalog {
   getToolSummaryForPlanner(): string {
     const tools = this.getAllTools();
     if (tools.length === 0) {
-      return "Available capabilities: defi-research, risk-analysis, execution";
+      return "No tools available.";
     }
-    return tools.map((t) => `- ${t.name}: ${t.description}`).join("\n");
+
+    // Tool list with descriptions
+    const toolList = tools
+      .map((t) => `- ${t.name}: ${t.description}`)
+      .join("\n");
+
+    // Auto-generate keyword guide from tool metadata
+    const toolsWithKeywords = tools.filter(
+      (t) => t.keywords && t.keywords.length > 0,
+    );
+    const keywordGuide =
+      toolsWithKeywords.length > 0
+        ? "\n\nTOOL SELECTION GUIDE:\n" +
+          toolsWithKeywords
+            .map((t) => `- ${t.keywords!.join(", ")} → "${t.name}"`)
+            .join("\n")
+        : "";
+
+    // Auto-generate examples from tool metadata
+    const toolsWithExamples = tools.filter((t) => t.example);
+    const examples =
+      toolsWithExamples.length > 0
+        ? "\n\nEXAMPLES:\n" +
+          toolsWithExamples.map((t) => `- ${t.example}`).join("\n")
+        : "";
+
+    return toolList + keywordGuide + examples;
   }
 
   /**
