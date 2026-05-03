@@ -309,12 +309,60 @@ export function ChatPanel({ events, onSendGoal, status, walletConnected, wrongCh
               {msg.role === "user" ? "YOU" : msg.role === "system" ? "SYSTEM" : "MESH"}
             </div>
             {msg.role === "mesh" ? (
-              <div className="mono text-sm break-words font-bold prose prose-sm prose-invert max-w-none prose-p:my-1 prose-pre:bg-black/10 prose-pre:p-2 prose-code:text-[#FF6B6B]">
+              <div className="text-sm break-words max-w-none">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
+                    h1: ({ children }) => (
+                      <h1 className="text-lg font-black uppercase tracking-tight border-b-2 border-black pb-1 mb-2 mt-3">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-base font-black uppercase tracking-tight border-b-2 border-black/40 pb-1 mb-2 mt-3">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-sm font-black uppercase tracking-tight mb-1.5 mt-3">{children}</h3>
+                    ),
+                    p: ({ children }) => (
+                      <p className="text-sm leading-relaxed mb-2">{children}</p>
+                    ),
+                    strong: ({ children }) => (
+                      <strong className="font-black text-black">{children}</strong>
+                    ),
+                    ul: ({ children }) => (
+                      <ul className="space-y-1.5 my-2 pl-1">{children}</ul>
+                    ),
+                    ol: ({ children }) => (
+                      <ol className="space-y-1.5 my-2 pl-1 list-decimal list-inside">{children}</ol>
+                    ),
+                    li: ({ children }) => (
+                      <li className="text-sm leading-relaxed flex gap-2">
+                        <span className="text-neo-accent font-black mt-0.5">▸</span>
+                        <span className="flex-1">{children}</span>
+                      </li>
+                    ),
+                    blockquote: ({ children }) => (
+                      <blockquote className="border-l-4 border-neo-accent bg-neo-accent/10 pl-3 py-1 my-2 text-sm font-bold">{children}</blockquote>
+                    ),
+                    code: ({ children, className }) => {
+                      const isBlock = className?.includes("language-");
+                      if (isBlock) {
+                        return (
+                          <code className={`${className} block`}>{children}</code>
+                        );
+                      }
+                      return (
+                        <code className="bg-black/10 border border-black/20 px-1.5 py-0.5 text-[11px] font-bold text-black break-all">
+                          {children}
+                        </code>
+                      );
+                    },
+                    pre: ({ children }) => (
+                      <pre className="bg-black text-green-400 border-2 border-black p-3 my-2 overflow-x-auto text-[11px] font-bold">
+                        {children}
+                      </pre>
+                    ),
                     table: ({ children }) => (
-                      <div className="overflow-x-auto my-2 rounded border-2 border-black">
+                      <div className="overflow-x-auto my-2 border-2 border-black">
                         <table className="min-w-full text-xs border-collapse">{children}</table>
                       </div>
                     ),
