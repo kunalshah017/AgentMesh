@@ -167,7 +167,8 @@ async function main() {
       },
       {
         name: "check-balance",
-        description: "Check wallet ETH or ERC-20 token balance on-chain",
+        description:
+          "Check wallet ETH or ERC-20 token balance on-chain. Supports multiple chains: ethereum, base, base-sepolia, sepolia, arbitrum, optimism, polygon, avalanche.",
         keywords: [
           "balance",
           "portfolio",
@@ -178,7 +179,7 @@ async function main() {
           "how much",
         ],
         example:
-          '"Show my portfolio" → [{"description": "Check wallet balances and holdings", "tool": "check-balance"}]',
+          '"Show my portfolio on base" → [{"description": "Check wallet balances on Base", "tool": "check-balance"}]',
       },
       {
         name: "pay-with-any-token",
@@ -190,6 +191,52 @@ async function main() {
       },
     ],
   });
+
+  // --- Helpers to extract structured args from subtask description text ---
+  function extractChain(task?: string): string | undefined {
+    if (!task) return undefined;
+    const t = task.toLowerCase();
+    const chains: Array<[RegExp, string]> = [
+      [/base\s*sepolia/i, "base-sepolia"],
+      [/\bsepolia\b/i, "sepolia"],
+      [/\bbase\b/i, "base"],
+      [/\barbitrum\b/i, "arbitrum"],
+      [/\boptimism\b/i, "optimism"],
+      [/\bpolygon\b|\bmatic\b/i, "polygon"],
+      [/\bavalanche\b|\bavax\b/i, "avalanche"],
+      [/\bethereum\b|\bmainnet\b/i, "ethereum"],
+    ];
+    for (const [re, chain] of chains) {
+      if (re.test(task)) return chain;
+    }
+    return undefined;
+  }
+
+  function extractToken(task?: string): string | undefined {
+    if (!task) return undefined;
+    const match = task.match(
+      /\b(ETH|WETH|USDC|USDT|DAI|WBTC|stETH|UNI|ARB|OP|MATIC|AVAX|cbETH)\b/i,
+    );
+    return match ? match[1].toUpperCase() : undefined;
+  }
+
+  function extractTokenPair(task?: string): [string, string] | undefined {
+    if (!task) return undefined;
+    // "swap X ETH to USDC" or "ETH → USDC" or "ETH for USDC"
+    const match = task.match(
+      /\b(ETH|WETH|USDC|USDT|DAI|WBTC|stETH|UNI)\b\s*(?:to|→|->|for|into)\s*\b(ETH|WETH|USDC|USDT|DAI|WBTC|stETH|UNI)\b/i,
+    );
+    if (match) return [match[1].toUpperCase(), match[2].toUpperCase()];
+    return undefined;
+  }
+
+  function extractAmount(task?: string): string | undefined {
+    if (!task) return undefined;
+    const match = task.match(
+      /(\d+(?:\.\d+)?)\s*(?:ETH|WETH|USDC|USDT|DAI|WBTC|stETH|UNI)/i,
+    );
+    return match ? match[1] : undefined;
+  }
 
   // Set up local router for demo/dev mode
   if (LOCAL_MODE) {
@@ -207,13 +254,20 @@ async function main() {
     router.register("contract-audit", (args) =>
       auditContract(args.protocol ?? "lido", args.chain),
     );
-    router.register("execute-swap", (args) =>
-      executeSwap(
-        args.tokenIn ?? "ETH",
-        args.tokenOut ?? "USDC",
-        args.amount ?? "1",
-      ),
-    );
+    router.register("execute-swap", (args) => {
+      const chain = args.chain ?? extractChain(args.task);
+      const tokenIn = args.tokenIn ?? extractTokenPair(args.task)?.[0] ?? "ETH";
+      const tokenOut =
+        args.tokenOut ?? extractTokenPair(args.task)?.[1] ?? "USDC";
+      const amount = args.amount ?? extractAmount(args.task) ?? "1";
+      return executeSwap(
+        tokenIn,
+        tokenOut,
+        amount,
+        chain,
+        args.address || undefined,
+      );
+    });
     router.register("execute-deposit", (args) =>
       executeDeposit(
         args.protocol ?? "lido",
@@ -221,12 +275,15 @@ async function main() {
         args.amount ?? "1",
       ),
     );
-    router.register("check-balance", (args) =>
-      checkBalance(
+    router.register("check-balance", (args) => {
+      const chain = args.chain ?? extractChain(args.task);
+      const token = args.token ?? extractToken(args.task);
+      return checkBalance(
         args.address ?? "0x0000000000000000000000000000000000000000",
-        args.token,
-      ),
-    );
+        token,
+        chain,
+      );
+    });
     router.register("pay-with-any-token", (args) =>
       payWithAnyToken(
         args.sourceToken ?? "ETH",
